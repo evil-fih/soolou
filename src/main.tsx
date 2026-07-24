@@ -9,7 +9,7 @@ import "./styles.css";
 
 console.log("Why are you in Console lol")
 
-console.warn("Ok seriously can you not dig around??)
+console.warn("Ok seriously can you not dig around??")
 
 console.error("Please just close DevTools bruh")
 

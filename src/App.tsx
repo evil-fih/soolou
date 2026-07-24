@@ -1,21 +1,23 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Footer } from "./components/Footer";
 import { Navbar } from "./components/Navbar";
 import { ChatbotWidget } from "./components/ChatbotWidget";
-import { AboutPage } from "./pages/AboutPage";
-import { AdminPage } from "./pages/AdminPage";
-import { AdminOrdersPage } from "./pages/AdminOrdersPage";
-import { AuthPage } from "./pages/AuthPage";
-import { CartPage } from "./pages/CartPage";
-import { CheckoutPage } from "./pages/CheckoutPage";
-import { ContactPage } from "./pages/ContactPage";
-import { CustomizePage } from "./pages/CustomizePage";
-import { FavoritesPage } from "./pages/FavoritesPage";
 import { HomePage } from "./pages/HomePage";
-import { PrivacyPage } from "./pages/PrivacyPage";
-import { ProductPage } from "./pages/ProductPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { ShopPage } from "./pages/ShopPage";
+
+const AboutPage = lazy(() => import("./pages/AboutPage").then((module) => ({ default: module.AboutPage })));
+const AdminPage = lazy(() => import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })));
+const AdminOrdersPage = lazy(() => import("./pages/AdminOrdersPage").then((module) => ({ default: module.AdminOrdersPage })));
+const AuthPage = lazy(() => import("./pages/AuthPage").then((module) => ({ default: module.AuthPage })));
+const CartPage = lazy(() => import("./pages/CartPage").then((module) => ({ default: module.CartPage })));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage").then((module) => ({ default: module.CheckoutPage })));
+const ContactPage = lazy(() => import("./pages/ContactPage").then((module) => ({ default: module.ContactPage })));
+const CustomizePage = lazy(() => import("./pages/CustomizePage").then((module) => ({ default: module.CustomizePage })));
+const FavoritesPage = lazy(() => import("./pages/FavoritesPage").then((module) => ({ default: module.FavoritesPage })));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((module) => ({ default: module.NotFoundPage })));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage").then((module) => ({ default: module.PrivacyPage })));
+const ProductPage = lazy(() => import("./pages/ProductPage").then((module) => ({ default: module.ProductPage })));
+const ProfilePage = lazy(() => import("./pages/ProfilePage").then((module) => ({ default: module.ProfilePage })));
+const ShopPage = lazy(() => import("./pages/ShopPage").then((module) => ({ default: module.ShopPage })));
 
 function getRoute() {
   return window.location.hash.replace(/^#/, "") || "/";
@@ -37,7 +39,7 @@ export function App() {
   const path = route.split("?")[0];
   const productSlug = path.startsWith("/product/") ? path.replace("/product/", "") : undefined;
 
-  let page = <HomePage />;
+  let page = path === "/" ? <HomePage /> : <NotFoundPage />;
   if (path === "/shop") page = <ShopPage route={route} />;
   if (path === "/customize") page = <CustomizePage route={route} />;
   if (path === "/cart") page = <CartPage />;
@@ -56,7 +58,17 @@ export function App() {
   return (
     <div className="app-shell">
       <Navbar />
-      <main>{page}</main>
+      <main>
+        <Suspense
+          fallback={
+            <section className="section route-loading" aria-live="polite">
+              Loading Soolou...
+            </section>
+          }
+        >
+          {page}
+        </Suspense>
+      </main>
       <Footer />
       <ChatbotWidget />
     </div>

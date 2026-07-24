@@ -2,6 +2,7 @@ import { CheckCircle, Heart, ShoppingCart } from "@phosphor-icons/react";
 import { Button } from "../components/Button";
 import { ProductCard } from "../components/ProductCard";
 import { ProductModel } from "../components/ProductModel";
+import { NotFoundPage } from "./NotFoundPage";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useProductCatalog } from "../context/ProductCatalogContext";
@@ -11,6 +12,8 @@ export function ProductPage({ slug }: { slug?: string }) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { findProduct, products } = useProductCatalog();
   const product = findProduct(slug);
+  if (!product) return <NotFoundPage />;
+
   const saved = isFavorite(product.id);
   const related = products.filter((item) => item.id !== product.id).slice(0, 3);
 

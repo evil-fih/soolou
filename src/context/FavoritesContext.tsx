@@ -24,35 +24,73 @@ interface FavoritesContextValue {
 }
 
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
+const favoritesStorageKey = "soolou-favorites-v1";
+
+function mergeFavorites(products: Product[]) {
+  const unique = new Map<number, Product>();
+  products.forEach((product) => unique.set(product.id, product));
+  return Array.from(unique.values());
+}
+
+function readLocalFavorites(): Product[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const saved = window.localStorage.getItem(favoritesStorageKey);
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? mergeFavorites(parsed.filter((product) => product?.id)) : [];
+  } catch (error) {
+    console.error("Could not read local Soolou favorites", error);
+    return [];
+  }
+}
+
+function saveLocalFavorites(products: Product[]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(favoritesStorageKey, JSON.stringify(mergeFavorites(products)));
+  } catch (error) {
+    console.error("Could not save local Soolou favorites", error);
+  }
+}
+
+function clearLocalFavorites() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(favoritesStorageKey);
+}
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [favorites, setFavorites] = useState<Product[]>([]);
-  const favoritesRef = useRef<Product[]>([]);
+  const [favorites, setFavorites] = useState<Product[]>(readLocalFavorites);
+  const hydratedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    favoritesRef.current = favorites;
-  }, [favorites]);
-
-  useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      hydratedUserIdRef.current = null;
+      return;
+    }
 
     let mounted = true;
+    const shouldMergeGuestFavorites = hydratedUserIdRef.current !== user.id;
+    hydratedUserIdRef.current = user.id;
 
     fetchFavoriteProducts(user.id)
       .then((backendFavorites) => {
         if (!mounted) return;
+        const guestFavorites = shouldMergeGuestFavorites ? readLocalFavorites() : [];
+        const mergedFavorites = mergeFavorites([...backendFavorites, ...guestFavorites]);
+        setFavorites(mergedFavorites);
 
-        if (backendFavorites.length) {
-          setFavorites(backendFavorites);
-          return;
-        }
-
-        favoritesRef.current.forEach((product) => {
-          saveFavoriteProduct(user.id, product).catch((error) => {
-            console.error("Could not sync favorite", error);
+        if (shouldMergeGuestFavorites) {
+          guestFavorites.forEach((product) => {
+            saveFavoriteProduct(user.id, product).catch((error) => {
+              console.error("Could not sync favorite", error);
+            });
           });
-        });
+          clearLocalFavorites();
+        }
       })
       .catch((error) => {
         console.error("Could not load Soolou favorites", error);
@@ -62,6 +100,10 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       mounted = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) saveLocalFavorites(favorites);
+  }, [favorites, user]);
 
   const value = useMemo<FavoritesContextValue>(
     () => ({

@@ -16,7 +16,7 @@ import { useAuth } from "../context/AuthContext";
 import { isSupabaseConfigured } from "../lib/supabase";
 
 type AuthMode = "login" | "register";
-type FormErrors = Partial<Record<"fullName" | "email" | "password" | "confirmPassword", string>>;
+type FormErrors = Partial<Record<"fullName" | "email" | "password" | "confirmPassword" | "code", string>>;
 
 interface AuthPageProps {
   mode: AuthMode;
@@ -77,7 +77,16 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     if (params.get("checkout") === "1") return "/checkout";
     return "/profile";
   }, [route]);
-  const { user, loading: authLoading, signIn, signOut, signUp } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    signIn,
+    signOut,
+    signUp,
+    sendEmailCode,
+    verifyEmailCode,
+    updatePassword,
+  } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -89,6 +98,9 @@ export function AuthPage({ mode, route }: AuthPageProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
+  const [recovering, setRecovering] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState("");
 
   useEffect(() => {
     setFullName("");
@@ -101,7 +113,120 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     setError("");
     setStatus(getQueryMessage(route));
     setLoading(false);
+    setRecovering(false);
+    setCodeSent(false);
+    setCode("");
   }, [mode, route]);
+
+  const openRecovery = () => {
+    setRecovering(true);
+    setCodeSent(false);
+    setCode("");
+    setPassword("");
+    setConfirmPassword("");
+    setErrors({});
+    setError("");
+    setStatus("");
+  };
+
+  const closeRecovery = () => {
+    setRecovering(false);
+    setCodeSent(false);
+    setCode("");
+    setPassword("");
+    setConfirmPassword("");
+    setErrors({});
+    setError("");
+    setStatus(getQueryMessage(route));
+  };
+
+  const handleSendCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus("");
+    setError("");
+
+    if (!emailPattern.test(email.trim())) {
+      setErrors({ email: "Enter a valid email address." });
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      setError("Supabase is not configured yet. Add the public Vite variables and restart the app.");
+      return;
+    }
+
+    setErrors({});
+    setLoading(true);
+
+    try {
+      const result = await sendEmailCode(email.trim());
+      if (result.error) {
+        setError(getFriendlyAuthError(result.error.message));
+        return;
+      }
+
+      setCodeSent(true);
+      setStatus("A login code was sent to your email. It expires soon.");
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "The email code could not be sent.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus("");
+    setError("");
+
+    const nextErrors: FormErrors = {};
+    const cleanCode = code.replace(/\s/g, "");
+    const wantsNewPassword = password.length > 0 || confirmPassword.length > 0;
+
+    if (!/^\d{6}$/.test(cleanCode)) {
+      nextErrors.code = "Enter the 6 digit code from your email.";
+    }
+
+    if (wantsNewPassword && password.length < 8) {
+      nextErrors.password = "Password must be at least 8 characters.";
+    }
+
+    if (wantsNewPassword && password !== confirmPassword) {
+      nextErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setLoading(true);
+
+    try {
+      const verifyResult = await verifyEmailCode(email.trim(), cleanCode);
+      if (verifyResult.error) {
+        setError(getFriendlyAuthError(verifyResult.error.message));
+        return;
+      }
+
+      if (wantsNewPassword) {
+        const passwordResult = await updatePassword(password);
+        if (passwordResult.error) {
+          setError(getFriendlyAuthError(passwordResult.error.message));
+          return;
+        }
+        setStatus("Your password was changed. Taking you to your account.");
+      } else {
+        setStatus("Code accepted. Taking you to your account.");
+      }
+
+      window.setTimeout(() => {
+        window.location.hash = loginRedirect;
+      }, 700);
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "The code could not be verified.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const copy = useMemo(
     () =>
@@ -287,6 +412,115 @@ export function AuthPage({ mode, route }: AuthPageProps) {
           </div>
         ) : null}
 
+        {recovering ? (
+          <form className="auth-form auth-recovery-form" onSubmit={codeSent ? handleVerifyCode : handleSendCode} noValidate>
+            <div className="auth-recovery-copy">
+              <h2>{codeSent ? "Enter your email code" : "Recover your account"}</h2>
+              <p>
+                {codeSent
+                  ? "Use the code to log in. Add a new password below only if you want to replace the old one."
+                  : "We will send a one-time login code to the email on your Soolou account."}
+              </p>
+            </div>
+
+            <label className="field-group auth-field">
+              <span>Email</span>
+              <div className={errors.email ? "auth-input auth-input-error" : "auth-input"}>
+                <EnvelopeSimple weight="bold" />
+                <input
+                  autoComplete="email"
+                  inputMode="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  readOnly={codeSent}
+                />
+              </div>
+              {errors.email ? <small>{errors.email}</small> : null}
+            </label>
+
+            {codeSent ? (
+              <>
+                <label className="field-group auth-field">
+                  <span>6 digit code</span>
+                  <div className={errors.code ? "auth-input auth-input-error" : "auth-input"}>
+                    <LockKey weight="bold" />
+                    <input
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={code}
+                      onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="123456"
+                    />
+                  </div>
+                  {errors.code ? <small>{errors.code}</small> : null}
+                </label>
+
+                <label className="field-group auth-field">
+                  <span>New password <em>optional</em></span>
+                  <div className={errors.password ? "auth-input auth-input-error" : "auth-input"}>
+                    <LockKey weight="bold" />
+                    <input
+                      autoComplete="new-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Leave blank to only log in"
+                    />
+                    <button
+                      className="password-toggle"
+                      type="button"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      {showPassword ? <EyeSlash weight="bold" /> : <Eye weight="bold" />}
+                    </button>
+                  </div>
+                  {errors.password ? <small>{errors.password}</small> : null}
+                </label>
+
+                <label className="field-group auth-field">
+                  <span>Confirm new password</span>
+                  <div className={errors.confirmPassword ? "auth-input auth-input-error" : "auth-input"}>
+                    <LockKey weight="bold" />
+                    <input
+                      autoComplete="new-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      placeholder="Repeat the new password"
+                    />
+                    <button
+                      className="password-toggle"
+                      type="button"
+                      aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                      onClick={() => setShowConfirmPassword((value) => !value)}
+                    >
+                      {showConfirmPassword ? <EyeSlash weight="bold" /> : <Eye weight="bold" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword ? <small>{errors.confirmPassword}</small> : null}
+                </label>
+              </>
+            ) : null}
+
+            <button className="button button-primary button-lg auth-submit" type="submit" disabled={loading}>
+              <span>{loading ? "Working..." : codeSent ? "Verify code" : "Send login code"}</span>
+              <ArrowRight weight="bold" />
+            </button>
+
+            {codeSent ? (
+              <button className="auth-text-button" type="button" disabled={loading} onClick={() => setCodeSent(false)}>
+                Send a new code
+              </button>
+            ) : null}
+
+            <button className="auth-text-button" type="button" disabled={loading} onClick={closeRecovery}>
+              Back to password login
+            </button>
+          </form>
+        ) : (
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           {isRegister ? (
             <label className="field-group auth-field">
@@ -371,11 +605,18 @@ export function AuthPage({ mode, route }: AuthPageProps) {
             <span>{loading ? (isRegister ? "Sending email..." : "Working...") : copy.button}</span>
             <ArrowRight weight="bold" />
           </button>
-        </form>
 
-        <p className="auth-switch">
+          {!isRegister ? (
+            <button className="auth-text-button" type="button" onClick={openRecovery}>
+              Forgot password?
+            </button>
+          ) : null}
+        </form>
+        )}
+
+        {!recovering ? <p className="auth-switch">
           {copy.switchLead} <a href={copy.switchHref}>{copy.switchLabel}</a>
-        </p>
+        </p> : null}
       </div>
     </section>
   );

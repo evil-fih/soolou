@@ -39,7 +39,7 @@ interface ProductCatalogValue {
   loading: boolean;
   error: string | null;
   refreshProducts: () => Promise<void>;
-  findProduct: (slug: string | undefined) => Product;
+  findProduct: (slug: string | undefined) => Product | undefined;
   findProductByIdOrSlug: (product: Product) => Product | undefined;
 }
 
@@ -172,15 +172,13 @@ export function ProductCatalogProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ProductCatalogValue>(() => {
     const publicProducts = catalogProducts.filter((product) => product.id !== basePlushProduct.id);
-    const fallbackFeatured = publicProducts[0] ?? fallbackProducts[0];
-
     return {
       products: publicProducts,
       allProducts: catalogProducts,
       loading,
       error,
       refreshProducts,
-      findProduct: (slug) => publicProducts.find((product) => product.slug === slug) ?? fallbackFeatured,
+      findProduct: (slug) => publicProducts.find((product) => product.slug === slug),
       findProductByIdOrSlug: (product) =>
         catalogProducts.find((item) => item.id === product.id || item.slug === product.slug),
     };

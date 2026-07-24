@@ -226,7 +226,7 @@ export function AccountOverview({ user, loading = false, error = "", onSignOut }
     }
 
     if (!nameChanged && !emailChanged) {
-      setProfileError("New email needs to be different from your current email.");
+      setProfileError("Change your name or email before saving.");
       return;
     }
 

@@ -10,7 +10,7 @@ export function ProductThumbnail({ product, size = "md" }: ProductThumbnailProps
 
   return (
     <span className={`product-thumbnail product-thumbnail-${size}`} role="img" aria-label={product.name}>
-      <img src={image} alt="" aria-hidden="true" />
+      <img src={image} alt="" aria-hidden="true" loading="lazy" decoding="async" />
     </span>
   );
 }

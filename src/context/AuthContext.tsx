@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import type { AuthError, AuthResponse, Session, User } from "@supabase/supabase-js";
+import type { AuthError, AuthResponse, Session, User, UserResponse } from "@supabase/supabase-js";
 import { fetchProfile, upsertProfile, type ProfileRecord } from "../lib/backend";
 import { supabase } from "../lib/supabase";
 
@@ -28,6 +28,9 @@ interface AuthContextValue {
   profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<AuthResponse>;
   signUp: (input: SignUpInput) => Promise<AuthResponse>;
+  sendEmailCode: (email: string) => Promise<{ error: AuthError | null }>;
+  verifyEmailCode: (email: string, code: string) => Promise<AuthResponse>;
+  updatePassword: (password: string) => Promise<UserResponse>;
   signOut: () => Promise<{ error: AuthError | null }>;
   refreshUser: () => Promise<void>;
 }
@@ -134,6 +137,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               full_name: fullName,
             },
           },
+        }),
+      sendEmailCode: (email) =>
+        requireSupabase().auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+          },
+        }),
+      verifyEmailCode: (email, code) =>
+        requireSupabase().auth.verifyOtp({
+          email,
+          token: code,
+          type: "email",
+        }),
+      updatePassword: (password) =>
+        requireSupabase().auth.updateUser({
+          password,
         }),
       signOut: () => requireSupabase().auth.signOut(),
       refreshUser: async () => {

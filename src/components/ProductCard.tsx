@@ -18,7 +18,11 @@ export function ProductCard({ product, compact = false, showBadge = false, badge
 
   return (
     <article className={compact ? "product-card product-card-compact" : "product-card"}>
-      <a className="product-card-media" href={`#/product/${product.slug}`}>
+      <a
+        className="product-card-media"
+        href={`#/product/${product.slug}`}
+        aria-label={`View ${product.name}`}
+      >
         {showBadge && (badgeOverride || product.badge === "New" || product.badge === "Limited")
           ? <span className="product-badge">{badgeOverride ?? product.badge}</span>
           : null}

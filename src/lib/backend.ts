@@ -335,29 +335,29 @@ export async function uploadAdminProductImage(file: File) {
   return data.publicUrl;
 }
 
-function productColumns(product: Product) {
+function adminProductRpcColumns(product: Product) {
   return {
-    slug: product.slug,
-    name: product.name,
-    category: product.category,
-    price: product.price,
-    badge: product.badge,
-    description: product.description,
-    detail: product.detail,
-    tags: product.tags,
-    palette: product.palette,
-    extra_categories: product.extraCategories ?? [],
-    image: product.image ?? null,
-    look: product.look,
-    active: true,
+    p_slug: product.slug,
+    p_name: product.name,
+    p_category: product.category,
+    p_price: product.price,
+    p_badge: product.badge,
+    p_description: product.description,
+    p_detail: product.detail,
+    p_tags: product.tags,
+    p_palette: product.palette,
+    p_extra_categories: product.extraCategories ?? [],
+    p_image: product.image ?? "",
+    p_look: product.look,
   };
 }
 
 export async function createAdminProduct(product: Product) {
   const { data, error } = await requireSupabase()
-    .from("products")
-    .insert(productColumns(product))
-    .select("id, slug, name, category, price, badge, description, detail, tags, palette, extra_categories, image, look")
+    .rpc("save_admin_product", {
+      p_id: null,
+      ...adminProductRpcColumns(product),
+    })
     .single();
 
   if (error) throw error;
@@ -367,10 +367,10 @@ export async function createAdminProduct(product: Product) {
 
 export async function updateAdminProduct(product: Product) {
   const { data, error } = await requireSupabase()
-    .from("products")
-    .update(productColumns(product))
-    .eq("id", product.id)
-    .select("id, slug, name, category, price, badge, description, detail, tags, palette, extra_categories, image, look")
+    .rpc("save_admin_product", {
+      p_id: product.id,
+      ...adminProductRpcColumns(product),
+    })
     .single();
 
   if (error) throw error;
@@ -380,9 +380,9 @@ export async function updateAdminProduct(product: Product) {
 
 export async function archiveAdminProduct(productId: number) {
   const { error } = await requireSupabase()
-    .from("products")
-    .update({ active: false })
-    .eq("id", productId);
+    .rpc("archive_admin_product", {
+      p_id: productId,
+    });
 
   if (error) throw error;
 }
@@ -506,59 +506,24 @@ export async function clearBackendCart(userId: string) {
 
 export async function createOrder(input: CheckoutInput) {
   const client = requireSupabase();
-  const userId = input.userId ?? null;
+  if (!input.userId) throw new Error("You must be signed in to place an order.");
 
-  const { data: order, error: orderError } = await client
-    .from("orders")
-    .insert({
-      user_id: userId,
-      customer_name: input.fullName,
-      customer_email: input.email,
-      shipping_address: input.address,
-      shipping_city: input.city,
-      shipping_postal_code: input.postalCode,
-      delivery_notes: input.deliveryNotes || null,
-      gift_wrap: input.giftWrap,
-      gift_wrap_fee: input.giftWrapFee,
-      subtotal: input.subtotal,
-      total: input.total,
-    })
-    .select("id")
-    .single();
+  const { data, error } = await client.rpc("place_checkout_order", {
+    p_full_name: input.fullName,
+    p_email: input.email,
+    p_address: input.address,
+    p_city: input.city,
+    p_postal_code: input.postalCode,
+    p_delivery_notes: input.deliveryNotes,
+    p_gift_wrap: input.giftWrap,
+    p_items: input.items.map((item) => ({
+      product_id: item.product.id,
+      quantity: item.quantity,
+    })),
+  });
 
-  if (orderError) throw orderError;
-
-  const orderItems = input.items.map((item) => ({
-    order_id: order.id,
-    user_id: userId,
-    product_id: item.product.id,
-    product_slug: item.product.slug,
-    product_name: item.product.name,
-    unit_price: item.product.price,
-    quantity: item.quantity,
-    product_snapshot: productSnapshot(item.product),
-  }));
-
-  const { error: itemsError } = await client.from("order_items").insert(orderItems);
-
-  if (itemsError) throw itemsError;
-
-  if (input.userId) {
-    await client.from("shipping_addresses").upsert(
-      {
-        user_id: input.userId,
-        full_name: input.fullName,
-        email: input.email,
-        address: input.address,
-        city: input.city,
-        postal_code: input.postalCode,
-        is_default: true,
-      },
-      { onConflict: "user_id" },
-    );
-  }
-
-  return order.id as string;
+  if (error) throw error;
+  return String(data);
 }
 
 export async function sendContactMessage(input: ContactInput) {

@@ -612,7 +612,8 @@ p {
   z-index: 6;
   display: grid;
   gap: 2px;
-  color: #fff;
+  color: #12233d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .hero-banner-copy span {
@@ -648,6 +649,37 @@ p {
 
 .hero-trust-card svg {
   color: var(--pink);
+}
+
+.route-loading {
+  min-height: 55vh;
+  display: grid;
+  place-items: center;
+  color: #12233d;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.not-found-page {
+  min-height: 65vh;
+  display: grid;
+  place-items: center;
+  padding-top: 48px;
+  padding-bottom: 48px;
+}
+
+.not-found-page .empty-state {
+  width: min(100%, 620px);
+}
+
+.not-found-page .empty-state > svg {
+  width: 44px;
+  height: 44px;
+  color: var(--pink-dark);
+}
+
+.not-found-page h1 {
+  color: var(--ink);
 }
 
 .doll-preview {
@@ -1565,6 +1597,10 @@ p {
 .admin-editor-title span {
   color: var(--pink);
   font-weight: 900;
+}
+
+.admin-editor-title .button > span:last-child {
+  color: #fff;
 }
 
 .admin-editor-title h2 {
@@ -2834,6 +2870,55 @@ p {
 .auth-submit svg {
   width: 19px;
   height: 19px;
+}
+
+.auth-text-button {
+  justify-self: center;
+  border: 0;
+  padding: 4px 8px;
+  background: transparent;
+  color: #8e2858;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.auth-text-button:hover {
+  color: #621b3d;
+}
+
+.auth-text-button:focus-visible {
+  outline: 3px solid rgba(255, 95, 158, 0.34);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.auth-text-button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.auth-recovery-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-recovery-copy h2 {
+  color: #12233d;
+  font-size: 1.45rem;
+}
+
+.auth-recovery-copy p {
+  color: #314965;
+  font-weight: 750;
+}
+
+.auth-field em {
+  color: #526a82;
+  font-size: 0.84rem;
+  font-style: normal;
+  font-weight: 750;
 }
 
 .auth-message {
@@ -4483,6 +4568,18 @@ p {
   font-size: 0.91rem;
   font-weight: 760;
   overflow-wrap: anywhere;
+}
+
+.support-chat-message p {
+  color: #0b1729;
+}
+
+.customize-copy h1 {
+  color: #12233d;
+}
+
+.customize-copy p {
+  color: #314965;
 }
 
 .support-chat-message-bot {

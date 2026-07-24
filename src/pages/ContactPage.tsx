@@ -22,6 +22,14 @@ export function ContactPage() {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const name = String(formData.get("name") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim();
+    const message = String(formData.get("message") ?? "").trim();
+
+    if (name.length < 2 || message.length < 10) {
+      setError("Please add your name and at least 10 characters about how we can help.");
+      return;
+    }
 
     setError("");
     setSending(true);
@@ -29,9 +37,9 @@ export function ContactPage() {
     try {
       await sendContactMessage({
         userId: user?.id,
-        name: String(formData.get("name") ?? ""),
-        email: String(formData.get("email") ?? ""),
-        message: String(formData.get("message") ?? ""),
+        name,
+        email,
+        message,
       });
 
       setSent(true);
@@ -80,17 +88,17 @@ export function ContactPage() {
 
         <label className="field-group">
           <span>Name</span>
-          <input name="name" required autoComplete="name" placeholder="Your name" defaultValue={defaultName} />
+          <input name="name" required maxLength={120} autoComplete="name" placeholder="Your name" defaultValue={defaultName} />
         </label>
 
         <label className="field-group">
           <span>Email</span>
-          <input name="email" required autoComplete="email" type="email" placeholder="you@example.com" defaultValue={user?.email ?? ""} />
+          <input name="email" required maxLength={254} autoComplete="email" type="email" placeholder="you@example.com" defaultValue={user?.email ?? ""} />
         </label>
 
         <label className="field-group">
           <span>Message</span>
-          <textarea name="message" required placeholder="Tell us what you need help with" />
+          <textarea name="message" required minLength={10} maxLength={4000} placeholder="Tell us what you need help with" />
         </label>
 
         {sent ? <p className="success-message">Thanks. Your message is ready for Soolou.</p> : null}

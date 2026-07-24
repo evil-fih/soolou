@@ -37,11 +37,26 @@ export function ProductModel({ product, size = "card" }: ProductModelProps) {
   const usesSoftWearable = softWearableSlugs.has(product.slug);
   const itemImage = usesSoftWearable ? `/products/wearable/${product.slug}.png` : product.image;
   const itemClassName = usesSoftWearable ? "product-model-item product-model-item-soft" : "product-model-item";
+  const loading = size === "large" ? "eager" : "lazy";
 
   return (
     <span className={`product-model product-model-${size}`} role="img" aria-label={product.name}>
-      <img className="product-model-base" src="/products/base-doll.png" alt="" aria-hidden="true" />
-      <img className={itemClassName} src={itemImage} alt="" aria-hidden="true" />
+      <img
+        className="product-model-base"
+        src="/products/base-doll.png"
+        alt=""
+        aria-hidden="true"
+        loading={loading}
+        decoding="async"
+      />
+      <img
+        className={itemClassName}
+        src={itemImage}
+        alt=""
+        aria-hidden="true"
+        loading={loading}
+        decoding="async"
+      />
     </span>
   );
 }

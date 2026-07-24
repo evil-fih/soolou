@@ -6,6 +6,7 @@ import {
 } from "@phosphor-icons/react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { askSoolouHelper, type SoolouChatMessage } from "../lib/backend";
+import { useProductCatalog } from "../context/ProductCatalogContext";
 
 interface ChatMessage {
   id: number;
@@ -13,11 +14,13 @@ interface ChatMessage {
   text: string;
   href?: string;
   linkLabel?: string;
+  includeInHistory?: boolean;
 }
 
 const quickPrompts = ["Track my order", "Create a plush", "Contact support"];
 
 export function ChatbotWidget() {
+  const { allProducts } = useProductCatalog();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -26,6 +29,7 @@ export function ChatbotWidget() {
       id: 1,
       sender: "bot",
       text: "Hi! I am the Soolou quick helper. What can I help you find?",
+      includeInHistory: false,
     },
   ]);
   const nextMessageId = useRef(2);
@@ -67,11 +71,33 @@ export function ChatbotWidget() {
     setTyping(true);
 
     try {
-      const chatHistory: SoolouChatMessage[] = conversation.slice(-10).map((message) => ({
-        role: message.sender === "bot" ? "assistant" : "user",
-        content: message.text,
-      }));
-      const reply = await askSoolouHelper(chatHistory);
+      const chatHistory = conversation
+        .filter((message) => message.includeInHistory !== false)
+        .reduce<SoolouChatMessage[]>((history, message) => {
+          const role = message.sender === "bot" ? "assistant" : "user";
+          const previous = history[history.length - 1];
+
+          if (previous?.role === role) {
+            previous.content = `${previous.content}\n${message.text}`;
+          } else {
+            history.push({ role, content: message.text });
+          }
+
+          return history;
+        }, [])
+        .slice(-9);
+
+      while (chatHistory[0]?.role === "assistant") chatHistory.shift();
+      const reply = await askSoolouHelper(chatHistory, {
+        currentPath: window.location.hash.replace(/^#/, "") || "/",
+        products: allProducts.map((product) => ({
+          name: product.name,
+          category: product.category,
+          price: product.price,
+          badge: product.badge,
+          description: product.description,
+        })),
+      });
 
       setMessages((current) => [
         ...current,
@@ -90,6 +116,7 @@ export function ChatbotWidget() {
           text: "I could not reach Gemini right now. Please try again in a moment or contact the Soolou team.",
           href: "#/contact",
           linkLabel: "Contact Soolou",
+          includeInHistory: false,
         },
       ]);
     } finally {

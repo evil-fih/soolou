@@ -31,6 +31,19 @@ export interface SoolouChatMessage {
   content: string;
 }
 
+export interface SoolouChatProductContext {
+  name: string;
+  category: string;
+  price: number;
+  badge: string;
+  description: string;
+}
+
+export interface SoolouWebsiteContext {
+  currentPath: string;
+  products: SoolouChatProductContext[];
+}
+
 export interface OrderSummary {
   id: string;
   status: AdminOrderStatus;
@@ -194,12 +207,15 @@ export function canUseBackend() {
   return isSupabaseConfigured && Boolean(supabase);
 }
 
-export async function askSoolouHelper(messages: SoolouChatMessage[]) {
+export async function askSoolouHelper(
+  messages: SoolouChatMessage[],
+  websiteContext: SoolouWebsiteContext,
+) {
   try {
     const response = await fetch("/api/soolou-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, websiteContext }),
     });
     const data = await response.json();
     const reply = data?.reply;
@@ -215,7 +231,7 @@ export async function askSoolouHelper(messages: SoolouChatMessage[]) {
 
   const client = requireSupabase();
   const { data, error } = await client.functions.invoke("soolou-chat", {
-    body: { messages },
+    body: { messages, websiteContext },
   });
 
   if (error) throw error;

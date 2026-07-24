@@ -5,6 +5,7 @@ interface CTASectionProps {
   text?: string;
   actionLabel?: string;
   href?: string;
+  className?: string;
 }
 
 export function CTASection({
@@ -12,9 +13,10 @@ export function CTASection({
   text = "A plush, uniquely you.",
   actionLabel = "Start Creating",
   href = "#/customize",
+  className = "",
 }: CTASectionProps) {
   return (
-    <section className="cta-section stitch-frame">
+    <section className={`cta-section stitch-frame${className ? ` ${className}` : ""}`}>
       <div>
         <h2>{title}</h2>
         <p>{text}</p>

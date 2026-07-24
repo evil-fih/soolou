@@ -3,11 +3,14 @@ import {
   Heart,
   List,
   PencilSimple,
-  ShoppingBag,
+  ShieldCheck,
+  ShoppingCart,
   UserCircle,
   X,
 } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { BrandLogo } from "./BrandLogo";
 import { Button } from "./Button";
 
@@ -15,12 +18,14 @@ const navLinks = [
   { label: "Home", href: "#/" },
   { label: "Shop", href: "#/shop" },
   { label: "About", href: "#/about" },
-  { label: "Contact", href: "#/checkout" },
+  { label: "Contact", href: "#/contact" },
 ];
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, isProductAdmin } = useAuth();
+  const { itemCount } = useCart();
+  const { favoriteCount } = useFavorites();
   const fullName = user?.user_metadata?.full_name;
   const accountLabel = user
     ? typeof fullName === "string" && fullName.trim()
@@ -44,15 +49,22 @@ export function Navbar() {
           <Button href="#/customize" variant="white" size="sm" icon={<PencilSimple weight="bold" />}>
             Create
           </Button>
-          <a className="icon-button icon-button-pink" href="#/shop" aria-label="Wishlist">
+          <a className="icon-button icon-button-pink" href="#/favorites" aria-label="Favorites">
             <Heart weight="fill" />
+            {favoriteCount > 0 ? <span className="favorite-count">{favoriteCount}</span> : null}
           </a>
           <a className="nav-account-link" href={accountHref} aria-label={user ? "My Account" : "Sign in"}>
             <UserCircle weight="bold" />
             <span>{loading ? "..." : accountLabel}</span>
           </a>
+          {isProductAdmin ? (
+            <a className="icon-button" href="#/admin" aria-label="Admin">
+              <ShieldCheck weight="bold" />
+            </a>
+          ) : null}
           <a className="icon-button" href="#/cart" aria-label="Cart">
-            <ShoppingBag weight="bold" />
+            <ShoppingCart weight="bold" />
+            {itemCount > 0 ? <span className="cart-count">{itemCount}</span> : null}
           </a>
         </div>
         <button
@@ -76,6 +88,14 @@ export function Navbar() {
           </a>
           <a href={accountHref} onClick={() => setOpen(false)}>
             {user ? "My Account" : "Log in"}
+          </a>
+          {isProductAdmin ? (
+            <a href="#/admin" onClick={() => setOpen(false)}>
+              Admin
+            </a>
+          ) : null}
+          <a href="#/favorites" onClick={() => setOpen(false)}>
+            Favorites
           </a>
           <a href="#/cart" onClick={() => setOpen(false)}>
             Cart

@@ -30,6 +30,10 @@ function getQueryMessage(route: string) {
   if (!query) return "";
 
   const params = new URLSearchParams(query);
+  if (params.get("checkout") === "1") {
+    return "Log in to keep your cart and continue checkout.";
+  }
+
   if (params.get("registered") === "1") {
     return "Check your email to verify your Soolou account, then sign in here.";
   }
@@ -65,6 +69,14 @@ function getFriendlyAuthError(message: string) {
 
 export function AuthPage({ mode, route }: AuthPageProps) {
   const isRegister = mode === "register";
+  const loginRedirect = useMemo(() => {
+    const params = new URLSearchParams(route.split("?")[1] ?? "");
+    const redirect = params.get("redirect");
+
+    if (redirect?.startsWith("/")) return redirect;
+    if (params.get("checkout") === "1") return "/checkout";
+    return "/profile";
+  }, [route]);
   const { user, loading: authLoading, signIn, signOut, signUp } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -154,9 +166,9 @@ export function AuthPage({ mode, route }: AuthPageProps) {
       const result = isRegister
         ? await signUp({
             fullName: fullName.trim(),
-            email: email.trim(),
-            password,
-            emailRedirectTo: `${window.location.origin}${window.location.pathname}#/login?verified=1`,
+          email: email.trim(),
+          password,
+            emailRedirectTo: `${window.location.origin}${window.location.pathname}#/login?verified=1&redirect=${encodeURIComponent(loginRedirect)}`,
           })
         : await signIn(email.trim(), password);
 
@@ -179,9 +191,9 @@ export function AuthPage({ mode, route }: AuthPageProps) {
         return;
       }
 
-      setStatus("You are signed in. Taking you to your account.");
+      setStatus(loginRedirect === "/checkout" ? "You are signed in. Taking you to checkout." : "You are signed in. Taking you to your account.");
       window.setTimeout(() => {
-        window.location.hash = "/profile";
+        window.location.hash = loginRedirect;
       }, 650);
     } catch (authError) {
       setLoading(false);
@@ -239,13 +251,7 @@ export function AuthPage({ mode, route }: AuthPageProps) {
           <p>Gift-ready plush friends with saved designs and a smoother checkout.</p>
         </div>
         <div className="auth-plush">
-          <span className="auth-ear auth-ear-left" />
-          <span className="auth-ear auth-ear-right" />
-          <span className="auth-face">
-            <span />
-            <span />
-          </span>
-          <span className="auth-smile" />
+          <img src="/base-doll-nobg.png" alt="" className="auth-plush-img" />
         </div>
         <div className="auth-note-card">
           <Sparkle weight="fill" />

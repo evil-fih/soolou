@@ -15,6 +15,17 @@ export function Footer() {
         <span />
         <span />
         <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
       </div>
       <div className="footer-inner">
         <div className="footer-brand">
@@ -25,22 +36,22 @@ export function Footer() {
         <div className="footer-links">
           <a href="#/about">About Us</a>
           <a href="#/shop">Shop Giftably</a>
-          <a href="#/checkout">Contact</a>
-          <a href="#/checkout">Privacy Policy</a>
+          <a href="#/contact">Contact</a>
+          <a href="#/privacy">Privacy Policy</a>
         </div>
         <div className="footer-social">
-          <a href="mailto:hello@soolou.example" aria-label="Email Soolou">
+          <a href="mailto:soolouofficial@gmail.com" aria-label="Email Soolou">
             <Envelope weight="bold" />
-            hello@soolou.example
+            soolouofficial@gmail.com
           </a>
           <div className="social-row">
-            <a href="#/checkout" aria-label="Soolou on TikTok">
+            <a href="https://www.tiktok.com/" aria-label="Soolou on TikTok" target="_blank" rel="noreferrer">
               <TiktokLogo weight="fill" />
             </a>
-            <a href="#/checkout" aria-label="Soolou on Facebook">
+            <a href="https://www.facebook.com/" aria-label="Soolou on Facebook" target="_blank" rel="noreferrer">
               <FacebookLogo weight="fill" />
             </a>
-            <a href="#/checkout" aria-label="Soolou on Instagram">
+            <a href="https://www.instagram.com/soolouofficial/" aria-label="Soolou on Instagram" target="_blank" rel="noreferrer">
               <InstagramLogo weight="bold" />
             </a>
           </div>

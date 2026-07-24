@@ -1,126 +1,79 @@
-import type { DollExpression } from "../data/products";
+import { useMemo } from "react";
+import type { Product } from "../data/products";
+import { getWearableProducts, hairOptions, slotGroups } from "../data/wearables";
 
 interface CustomizationPanelProps {
-  body: string;
-  hair: string;
-  outfit: string;
-  expression: DollExpression;
-  note: string;
-  onBodyChange: (value: string) => void;
-  onHairChange: (value: string) => void;
-  onOutfitChange: (value: string) => void;
-  onExpressionChange: (value: DollExpression) => void;
-  onNoteChange: (value: string) => void;
+  products: Product[];
+  selectedSlugs: string[];
+  onToggle: (slug: string) => void;
 }
 
-const bodyColors = [
-  { label: "Peach", value: "#f4d6bc" },
-  { label: "Cocoa", value: "#c69278" },
-  { label: "Rose", value: "#f7d6e7" },
-  { label: "Lavender", value: "#d8d2ff" },
-];
+interface IconItem {
+  slug: string;
+  name: string;
+  image: string;
+}
 
-const hairColors = [
-  { label: "Cocoa", value: "#3d231a" },
-  { label: "Berry", value: "#7b4a85" },
-  { label: "Sunny", value: "#e7a93a" },
-  { label: "Ink", value: "#2d2b35" },
-];
+const hairstyleItems: IconItem[] = hairOptions.map((h) => ({
+  slug: h.slug,
+  name: h.name,
+  image: h.image,
+}));
 
-const outfitColors = [
-  { label: "Sky", value: "#79c6ed" },
-  { label: "Pink", value: "#ff8fba" },
-  { label: "Leaf", value: "#79b94e" },
-  { label: "Moon", value: "#c8bdff" },
-];
+export function CustomizationPanel({ products, selectedSlugs, onToggle }: CustomizationPanelProps) {
+  const sections = useMemo(() => {
+    const wearableProducts = getWearableProducts(products);
+    const topItems: IconItem[] = wearableProducts
+      .filter((p) => slotGroups.top.includes(p.slug) || slotGroups.dress.includes(p.slug))
+      .map((p) => ({ slug: p.slug, name: p.name, image: p.image ?? "" }));
 
-const expressions: Array<{ label: string; value: DollExpression }> = [
-  { label: "Smile", value: "smile" },
-  { label: "Button", value: "button" },
-  { label: "Sleepy", value: "sleepy" },
-  { label: "Spark", value: "spark" },
-];
+    const bottomItems: IconItem[] = wearableProducts
+      .filter((p) => slotGroups.bottom.includes(p.slug))
+      .map((p) => ({ slug: p.slug, name: p.name, image: p.image ?? "" }));
 
-export function CustomizationPanel({
-  body,
-  hair,
-  outfit,
-  expression,
-  note,
-  onBodyChange,
-  onHairChange,
-  onOutfitChange,
-  onExpressionChange,
-  onNoteChange,
-}: CustomizationPanelProps) {
+    const accessoryItems: IconItem[] = wearableProducts
+      .filter(
+        (p) =>
+          slotGroups.scarf.includes(p.slug) ||
+          slotGroups.tie.includes(p.slug) ||
+          slotGroups.hat.includes(p.slug) ||
+          slotGroups.clip.includes(p.slug),
+      )
+      .map((p) => ({ slug: p.slug, name: p.name, image: p.image ?? "" }));
+
+    return [
+      { label: "Tops", items: topItems },
+      { label: "Bottoms", items: bottomItems },
+      { label: "Hairstyles", items: hairstyleItems },
+      { label: "Accessories", items: accessoryItems },
+    ];
+  }, [products]);
+
   return (
     <div className="customization-panel">
-      <OptionGroup title="Body color">
-        {bodyColors.map((color) => (
-          <button
-            className={body === color.value ? "swatch swatch-active" : "swatch"}
-            key={color.value}
-            type="button"
-            onClick={() => onBodyChange(color.value)}
-            aria-label={color.label}
-            style={{ background: color.value }}
-          />
-        ))}
-      </OptionGroup>
-      <OptionGroup title="Hair style">
-        {hairColors.map((color) => (
-          <button
-            className={hair === color.value ? "chip chip-active" : "chip"}
-            key={color.value}
-            type="button"
-            onClick={() => onHairChange(color.value)}
-          >
-            {color.label}
-          </button>
-        ))}
-      </OptionGroup>
-      <OptionGroup title="Outfit">
-        {outfitColors.map((color) => (
-          <button
-            className={outfit === color.value ? "chip chip-active" : "chip"}
-            key={color.value}
-            type="button"
-            onClick={() => onOutfitChange(color.value)}
-          >
-            {color.label}
-          </button>
-        ))}
-      </OptionGroup>
-      <OptionGroup title="Face">
-        {expressions.map((item) => (
-          <button
-            className={expression === item.value ? "chip chip-active" : "chip"}
-            key={item.value}
-            type="button"
-            onClick={() => onExpressionChange(item.value)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </OptionGroup>
-      <label className="field-group">
-        <span>Embroidered note</span>
-        <textarea
-          value={note}
-          maxLength={80}
-          onChange={(event) => onNoteChange(event.target.value)}
-          placeholder="Add a name, date, or tiny message"
-        />
-      </label>
-    </div>
-  );
-}
-
-function OptionGroup({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="option-group">
-      <h3>{title}</h3>
-      <div className="option-row">{children}</div>
+      {sections.map(({ label, items }) => (
+        <div key={label} className="option-group">
+          <h3>{label}</h3>
+          <div className="option-row option-row--icons">
+            {items.map((item) => {
+              const active = selectedSlugs.includes(item.slug);
+              return (
+                <button
+                  key={item.slug}
+                  type="button"
+                  className={active ? "product-icon-btn product-icon-btn--active" : "product-icon-btn"}
+                  onClick={() => onToggle(item.slug)}
+                  title={item.name}
+                  aria-label={item.name}
+                  aria-pressed={active}
+                >
+                  <img src={item.image} alt={item.name} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

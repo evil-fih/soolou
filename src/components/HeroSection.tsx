@@ -1,7 +1,5 @@
 import { Gift, ShieldCheck } from "@phosphor-icons/react";
-import { featuredProduct } from "../data/products";
 import { Button } from "./Button";
-import { DollPreview } from "./DollPreview";
 
 export function HeroSection() {
   return (
@@ -24,9 +22,13 @@ export function HeroSection() {
       <div className="hero-visual stitch-frame">
         <div className="hero-banner-copy">
           <span>Fresh drop</span>
-          <strong>{featuredProduct.name}</strong>
+          <strong>Blue Denim Shorts</strong>
         </div>
-        <DollPreview look={featuredProduct.look} label={featuredProduct.name} size="lg" floating />
+        <img
+          src="/advertised-doll.png"
+          alt="Soolou plush doll"
+          className="hero-doll-img"
+        />
         <div className="hero-trust-card">
           <span>
             <ShieldCheck weight="fill" />

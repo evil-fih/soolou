@@ -13,6 +13,7 @@ interface ButtonProps {
   className?: string;
   onClick?: () => void;
   ariaLabel?: string;
+  disabled?: boolean;
 }
 
 export function Button({
@@ -25,6 +26,7 @@ export function Button({
   className = "",
   onClick,
   ariaLabel,
+  disabled = false,
 }: ButtonProps) {
   const classes = ["button", `button-${variant}`, `button-${size}`, className]
     .filter(Boolean)
@@ -46,7 +48,7 @@ export function Button({
   }
 
   return (
-    <button className={classes} type={type} onClick={onClick} aria-label={ariaLabel}>
+    <button className={classes} type={type} onClick={onClick} aria-label={ariaLabel} disabled={disabled}>
       {content}
     </button>
   );

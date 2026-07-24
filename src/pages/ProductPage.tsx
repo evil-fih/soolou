@@ -1,11 +1,17 @@
-import { CheckCircle, Heart, ShoppingBag } from "@phosphor-icons/react";
+import { CheckCircle, Heart, ShoppingCart } from "@phosphor-icons/react";
 import { Button } from "../components/Button";
-import { DollPreview } from "../components/DollPreview";
 import { ProductCard } from "../components/ProductCard";
-import { findProduct, products } from "../data/products";
+import { ProductModel } from "../components/ProductModel";
+import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
+import { useProductCatalog } from "../context/ProductCatalogContext";
 
 export function ProductPage({ slug }: { slug?: string }) {
+  const { addItem } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { findProduct, products } = useProductCatalog();
   const product = findProduct(slug);
+  const saved = isFavorite(product.id);
   const related = products.filter((item) => item.id !== product.id).slice(0, 3);
 
   return (
@@ -13,13 +19,12 @@ export function ProductPage({ slug }: { slug?: string }) {
       <section className="section product-detail-layout">
         <div className="product-gallery">
           <div className="product-main-media stitch-frame">
-            <span className="product-badge">{product.badge}</span>
-            <DollPreview look={product.look} label={product.name} size="lg" floating />
+            <ProductModel product={product} size="large" />
           </div>
           <div className="thumbnail-row" aria-label="Product previews">
             {[product, ...related.slice(0, 2)].map((item) => (
               <a href={`#/product/${item.slug}`} key={item.id} aria-label={item.name}>
-                <DollPreview look={item.look} label={item.name} size="sm" />
+                <ProductModel product={item} size="thumb" />
               </a>
             ))}
           </div>
@@ -38,15 +43,28 @@ export function ProductPage({ slug }: { slug?: string }) {
             ))}
           </div>
           <div className="purchase-actions">
-            <Button href="#/cart" size="lg" icon={<ShoppingBag weight="bold" />}>
-              Buy
-            </Button>
+            <button
+              className="button button-primary button-lg"
+              type="button"
+              onClick={() => addItem(product)}
+            >
+              <span className="button-icon">
+                <ShoppingCart weight="bold" />
+              </span>
+              <span>Add to cart</span>
+            </button>
             <Button href="#/customize" variant="secondary" size="lg">
               Customize
             </Button>
-            <a className="icon-button product-like" href="#/shop" aria-label="Save product">
-              <Heart weight="bold" />
-            </a>
+            <button
+              className={saved ? "icon-button product-like product-card-favorite-active" : "icon-button product-like"}
+              type="button"
+              onClick={() => toggleFavorite(product)}
+              aria-label={saved ? `Remove ${product.name} from favorites` : `Save ${product.name}`}
+              aria-pressed={saved}
+            >
+              <Heart weight={saved ? "fill" : "bold"} />
+            </button>
           </div>
           <div className="detail-list">
             <div>

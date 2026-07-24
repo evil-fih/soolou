@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { AuthError, AuthResponse, Session, User } from "@supabase/supabase-js";
+import { fetchProfile, upsertProfile, type ProfileRecord } from "../lib/backend";
 import { supabase } from "../lib/supabase";
 
 interface SignUpInput {
@@ -19,7 +20,12 @@ interface SignUpInput {
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
+  profile: ProfileRecord | null;
+  isAdmin: boolean;
+  isProductAdmin: boolean;
+  isStaff: boolean;
   loading: boolean;
+  profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<AuthResponse>;
   signUp: (input: SignUpInput) => Promise<AuthResponse>;
   signOut: () => Promise<{ error: AuthError | null }>;
@@ -39,7 +45,9 @@ function requireSupabase() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -70,11 +78,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      setProfileLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    setProfileLoading(true);
+
+    upsertProfile(user)
+      .then(() => fetchProfile(user.id))
+      .then((nextProfile) => {
+        if (mounted) setProfile(nextProfile);
+      })
+      .catch((error) => {
+        console.error("Could not sync Soolou profile", error);
+        if (mounted) setProfile(null);
+      })
+      .finally(() => {
+        if (mounted) setProfileLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       session,
+      profile,
+      isAdmin: profile?.admin_role === "admin" || Boolean(profile?.is_admin),
+      isProductAdmin:
+        profile?.admin_role === "admin" ||
+        profile?.admin_role === "sub_admin" ||
+        Boolean(profile?.is_admin),
+      isStaff: Boolean(profile && profile.admin_role !== "customer"),
       loading,
+      profileLoading,
       signIn: (email, password) =>
         requireSupabase().auth.signInWithPassword({
           email,
@@ -97,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(data.user);
       },
     }),
-    [loading, session, user],
+    [loading, profile, profileLoading, session, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

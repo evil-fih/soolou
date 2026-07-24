@@ -45,7 +45,7 @@ export function Footer() {
             soolouofficial@gmail.com
           </a>
           <div className="social-row">
-            <a href="https://www.tiktok.com/" aria-label="Soolou on TikTok" target="_blank" rel="noreferrer">
+            <a href="https://www.tiktok.com/@soolouofficial?lang=en" aria-label="Soolou on TikTok" target="_blank" rel="noreferrer">
               <TiktokLogo weight="fill" />
             </a>
             <a href="https://www.facebook.com/profile.php?id=61591799177046&locale=vi_VN" aria-label="Soolou on Facebook" target="_blank" rel="noreferrer">

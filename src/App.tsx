@@ -20,6 +20,11 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage").then((module) => ({
 const ShopPage = lazy(() => import("./pages/ShopPage").then((module) => ({ default: module.ShopPage })));
 
 function getRoute() {
+  const isPasswordRecovery = new URLSearchParams(window.location.search).get("password-recovery") === "1";
+  if (isPasswordRecovery && !window.location.hash.startsWith("#/")) {
+    return "/reset-password";
+  }
+
   return window.location.hash.replace(/^#/, "") || "/";
 }
 
@@ -52,6 +57,7 @@ export function App() {
   if (path === "/favorites") page = <FavoritesPage />;
   if (path === "/login") page = <AuthPage mode="login" route={route} />;
   if (path === "/register") page = <AuthPage mode="register" route={route} />;
+  if (path === "/reset-password") page = <AuthPage mode="reset" route={route} />;
   if (path === "/profile" || path === "/account") page = <ProfilePage />;
   if (path.startsWith("/product/")) page = <ProductPage slug={productSlug} />;
 

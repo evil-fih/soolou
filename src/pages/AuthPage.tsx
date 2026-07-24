@@ -15,8 +15,8 @@ import { AccountOverview } from "../components/AccountOverview";
 import { useAuth } from "../context/AuthContext";
 import { isSupabaseConfigured } from "../lib/supabase";
 
-type AuthMode = "login" | "register";
-type FormErrors = Partial<Record<"fullName" | "email" | "password" | "confirmPassword" | "code", string>>;
+type AuthMode = "login" | "register" | "reset";
+type FormErrors = Partial<Record<"fullName" | "email" | "password" | "confirmPassword", string>>;
 
 interface AuthPageProps {
   mode: AuthMode;
@@ -69,6 +69,7 @@ function getFriendlyAuthError(message: string) {
 
 export function AuthPage({ mode, route }: AuthPageProps) {
   const isRegister = mode === "register";
+  const isReset = mode === "reset";
   const loginRedirect = useMemo(() => {
     const params = new URLSearchParams(route.split("?")[1] ?? "");
     const redirect = params.get("redirect");
@@ -83,8 +84,7 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     signIn,
     signOut,
     signUp,
-    sendEmailCode,
-    verifyEmailCode,
+    requestPasswordReset,
     updatePassword,
   } = useAuth();
   const [fullName, setFullName] = useState("");
@@ -99,8 +99,7 @@ export function AuthPage({ mode, route }: AuthPageProps) {
   const [loading, setLoading] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
   const [recovering, setRecovering] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
-  const [code, setCode] = useState("");
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   useEffect(() => {
     setFullName("");
@@ -114,14 +113,12 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     setStatus(getQueryMessage(route));
     setLoading(false);
     setRecovering(false);
-    setCodeSent(false);
-    setCode("");
+    setResetEmailSent(false);
   }, [mode, route]);
 
   const openRecovery = () => {
     setRecovering(true);
-    setCodeSent(false);
-    setCode("");
+    setResetEmailSent(false);
     setPassword("");
     setConfirmPassword("");
     setErrors({});
@@ -131,8 +128,7 @@ export function AuthPage({ mode, route }: AuthPageProps) {
 
   const closeRecovery = () => {
     setRecovering(false);
-    setCodeSent(false);
-    setCode("");
+    setResetEmailSent(false);
     setPassword("");
     setConfirmPassword("");
     setErrors({});
@@ -140,7 +136,7 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     setStatus(getQueryMessage(route));
   };
 
-  const handleSendCode = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSendResetEmail = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("");
     setError("");
@@ -159,39 +155,33 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     setLoading(true);
 
     try {
-      const result = await sendEmailCode(email.trim());
+      const redirectTo = `${window.location.origin}${window.location.pathname}?password-recovery=1`;
+      const result = await requestPasswordReset(email.trim(), redirectTo);
       if (result.error) {
         setError(getFriendlyAuthError(result.error.message));
         return;
       }
 
-      setCodeSent(true);
-      setStatus("A login code was sent to your email. It expires soon.");
+      setResetEmailSent(true);
+      setStatus("Reset password email sent. Use the button in the email to choose a new password.");
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "The email code could not be sent.");
+      setError(authError instanceof Error ? authError.message : "The reset password email could not be sent.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerifyCode = async (event: FormEvent<HTMLFormElement>) => {
+  const handleResetPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("");
     setError("");
 
     const nextErrors: FormErrors = {};
-    const cleanCode = code.replace(/\s/g, "");
-    const wantsNewPassword = password.length > 0 || confirmPassword.length > 0;
-
-    if (!/^\d{6}$/.test(cleanCode)) {
-      nextErrors.code = "Enter the 6 digit code from your email.";
-    }
-
-    if (wantsNewPassword && password.length < 8) {
+    if (password.length < 8) {
       nextErrors.password = "Password must be at least 8 characters.";
     }
 
-    if (wantsNewPassword && password !== confirmPassword) {
+    if (password !== confirmPassword) {
       nextErrors.confirmPassword = "Passwords do not match.";
     }
 
@@ -201,28 +191,19 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     setLoading(true);
 
     try {
-      const verifyResult = await verifyEmailCode(email.trim(), cleanCode);
-      if (verifyResult.error) {
-        setError(getFriendlyAuthError(verifyResult.error.message));
+      const passwordResult = await updatePassword(password);
+      if (passwordResult.error) {
+        setError(getFriendlyAuthError(passwordResult.error.message));
         return;
       }
 
-      if (wantsNewPassword) {
-        const passwordResult = await updatePassword(password);
-        if (passwordResult.error) {
-          setError(getFriendlyAuthError(passwordResult.error.message));
-          return;
-        }
-        setStatus("Your password was changed. Taking you to your account.");
-      } else {
-        setStatus("Code accepted. Taking you to your account.");
-      }
-
+      setStatus("Your password was changed. Taking you to your account.");
       window.setTimeout(() => {
-        window.location.hash = loginRedirect;
+        window.history.replaceState({}, "", `${window.location.pathname}#/profile`);
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
       }, 700);
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "The code could not be verified.");
+      setError(authError instanceof Error ? authError.message : "Your password could not be changed.");
     } finally {
       setLoading(false);
     }
@@ -230,7 +211,16 @@ export function AuthPage({ mode, route }: AuthPageProps) {
 
   const copy = useMemo(
     () =>
-      isRegister
+      isReset
+        ? {
+            title: "Choose a new password",
+            body: "Use a fresh password with at least 8 characters for your Soolou account.",
+            button: "Reset password",
+            switchLead: "Remembered your password?",
+            switchLabel: "Back to login",
+            switchHref: "#/login",
+          }
+        : isRegister
         ? {
             title: "Start your soft little collection",
             body: "Create an account for saved plush designs, order updates, and tiny gift notes.",
@@ -247,7 +237,7 @@ export function AuthPage({ mode, route }: AuthPageProps) {
             switchLabel: "Create account",
             switchHref: "#/register",
           },
-    [isRegister],
+    [isRegister, isReset],
   );
 
   const validate = () => {
@@ -357,7 +347,7 @@ export function AuthPage({ mode, route }: AuthPageProps) {
     );
   }
 
-  if (user) {
+  if (user && !isReset) {
     return (
       <AccountOverview
         user={user}
@@ -386,7 +376,9 @@ export function AuthPage({ mode, route }: AuthPageProps) {
 
       <div className="auth-panel">
         <div className="auth-panel-heading">
-          <span className="auth-kicker">{isRegister ? "Join the cuddle club" : "Your plush shelf awaits"}</span>
+          <span className="auth-kicker">
+            {isReset ? "Secure your Soolou account" : isRegister ? "Join the cuddle club" : "Your plush shelf awaits"}
+          </span>
           <h1 id="auth-heading">{copy.title}</h1>
           <p>{copy.body}</p>
         </div>
@@ -412,15 +404,77 @@ export function AuthPage({ mode, route }: AuthPageProps) {
           </div>
         ) : null}
 
-        {recovering ? (
-          <form className="auth-form auth-recovery-form" onSubmit={codeSent ? handleVerifyCode : handleSendCode} noValidate>
+        {isReset ? (
+          user ? (
+            <form className="auth-form auth-recovery-form" onSubmit={handleResetPassword} noValidate>
+              <label className="field-group auth-field">
+                <span>New password</span>
+                <div className={errors.password ? "auth-input auth-input-error" : "auth-input"}>
+                  <LockKey weight="bold" />
+                  <input
+                    autoComplete="new-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="At least 8 characters"
+                  />
+                  <button
+                    className="password-toggle"
+                    type="button"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((value) => !value)}
+                  >
+                    {showPassword ? <EyeSlash weight="bold" /> : <Eye weight="bold" />}
+                  </button>
+                </div>
+                {errors.password ? <small>{errors.password}</small> : null}
+              </label>
+
+              <label className="field-group auth-field">
+                <span>Confirm new password</span>
+                <div className={errors.confirmPassword ? "auth-input auth-input-error" : "auth-input"}>
+                  <LockKey weight="bold" />
+                  <input
+                    autoComplete="new-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    placeholder="Repeat the new password"
+                  />
+                  <button
+                    className="password-toggle"
+                    type="button"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    onClick={() => setShowConfirmPassword((value) => !value)}
+                  >
+                    {showConfirmPassword ? <EyeSlash weight="bold" /> : <Eye weight="bold" />}
+                  </button>
+                </div>
+                {errors.confirmPassword ? <small>{errors.confirmPassword}</small> : null}
+              </label>
+
+              <button className="button button-primary button-lg auth-submit" type="submit" disabled={loading}>
+                <span>{loading ? "Updating password..." : "Reset password"}</span>
+                <ArrowRight weight="bold" />
+              </button>
+            </form>
+          ) : (
+            <div className="auth-form auth-recovery-form">
+              <div className="auth-message auth-message-error" role="alert">
+                <WarningCircle weight="fill" />
+                <span>This reset link is invalid or expired. Request a new one from the login page.</span>
+              </div>
+              <a className="button button-primary button-lg auth-submit" href="#/login">
+                <span>Back to login</span>
+                <ArrowRight weight="bold" />
+              </a>
+            </div>
+          )
+        ) : recovering ? (
+          <form className="auth-form auth-recovery-form" onSubmit={handleSendResetEmail} noValidate>
             <div className="auth-recovery-copy">
-              <h2>{codeSent ? "Enter your email code" : "Recover your account"}</h2>
-              <p>
-                {codeSent
-                  ? "Use the code to log in. Add a new password below only if you want to replace the old one."
-                  : "We will send a one-time login code to the email on your Soolou account."}
-              </p>
+              <h2>Reset your password</h2>
+              <p>We will email you a secure button that opens a page where you can choose a new password.</p>
             </div>
 
             <label className="field-group auth-field">
@@ -433,86 +487,24 @@ export function AuthPage({ mode, route }: AuthPageProps) {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
-                  readOnly={codeSent}
+                  readOnly={resetEmailSent}
                 />
               </div>
               {errors.email ? <small>{errors.email}</small> : null}
             </label>
 
-            {codeSent ? (
-              <>
-                <label className="field-group auth-field">
-                  <span>6 digit code</span>
-                  <div className={errors.code ? "auth-input auth-input-error" : "auth-input"}>
-                    <LockKey weight="bold" />
-                    <input
-                      autoComplete="one-time-code"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={code}
-                      onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                      placeholder="123456"
-                    />
-                  </div>
-                  {errors.code ? <small>{errors.code}</small> : null}
-                </label>
-
-                <label className="field-group auth-field">
-                  <span>New password <em>optional</em></span>
-                  <div className={errors.password ? "auth-input auth-input-error" : "auth-input"}>
-                    <LockKey weight="bold" />
-                    <input
-                      autoComplete="new-password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Leave blank to only log in"
-                    />
-                    <button
-                      className="password-toggle"
-                      type="button"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      onClick={() => setShowPassword((value) => !value)}
-                    >
-                      {showPassword ? <EyeSlash weight="bold" /> : <Eye weight="bold" />}
-                    </button>
-                  </div>
-                  {errors.password ? <small>{errors.password}</small> : null}
-                </label>
-
-                <label className="field-group auth-field">
-                  <span>Confirm new password</span>
-                  <div className={errors.confirmPassword ? "auth-input auth-input-error" : "auth-input"}>
-                    <LockKey weight="bold" />
-                    <input
-                      autoComplete="new-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(event) => setConfirmPassword(event.target.value)}
-                      placeholder="Repeat the new password"
-                    />
-                    <button
-                      className="password-toggle"
-                      type="button"
-                      aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-                      onClick={() => setShowConfirmPassword((value) => !value)}
-                    >
-                      {showConfirmPassword ? <EyeSlash weight="bold" /> : <Eye weight="bold" />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword ? <small>{errors.confirmPassword}</small> : null}
-                </label>
-              </>
-            ) : null}
-
-            <button className="button button-primary button-lg auth-submit" type="submit" disabled={loading}>
-              <span>{loading ? "Working..." : codeSent ? "Verify code" : "Send login code"}</span>
+            <button
+              className="button button-primary button-lg auth-submit"
+              type="submit"
+              disabled={loading || resetEmailSent}
+            >
+              <span>{loading ? "Sending email..." : resetEmailSent ? "Email sent" : "Send reset password email"}</span>
               <ArrowRight weight="bold" />
             </button>
 
-            {codeSent ? (
-              <button className="auth-text-button" type="button" disabled={loading} onClick={() => setCodeSent(false)}>
-                Send a new code
+            {resetEmailSent ? (
+              <button className="auth-text-button" type="button" disabled={loading} onClick={() => setResetEmailSent(false)}>
+                Send another reset email
               </button>
             ) : null}
 

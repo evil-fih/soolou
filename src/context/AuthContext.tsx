@@ -28,8 +28,7 @@ interface AuthContextValue {
   profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<AuthResponse>;
   signUp: (input: SignUpInput) => Promise<AuthResponse>;
-  sendEmailCode: (email: string) => Promise<{ error: AuthError | null }>;
-  verifyEmailCode: (email: string, code: string) => Promise<AuthResponse>;
+  requestPasswordReset: (email: string, redirectTo: string) => Promise<{ error: AuthError | null }>;
   updatePassword: (password: string) => Promise<UserResponse>;
   signOut: () => Promise<{ error: AuthError | null }>;
   refreshUser: () => Promise<void>;
@@ -69,10 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
+
+      if (event === "PASSWORD_RECOVERY") {
+        window.history.replaceState({}, "", `${window.location.pathname}#/reset-password`);
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      }
     });
 
     return () => {
@@ -138,18 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             },
           },
         }),
-      sendEmailCode: (email) =>
-        requireSupabase().auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-          },
-        }),
-      verifyEmailCode: (email, code) =>
-        requireSupabase().auth.verifyOtp({
-          email,
-          token: code,
-          type: "email",
+      requestPasswordReset: (email, redirectTo) =>
+        requireSupabase().auth.resetPasswordForEmail(email, {
+          redirectTo,
         }),
       updatePassword: (password) =>
         requireSupabase().auth.updateUser({

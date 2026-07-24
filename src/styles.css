@@ -1603,6 +1603,20 @@ p {
   color: #fff;
 }
 
+.admin-editor-title .button {
+  position: relative;
+  padding-inline: 48px;
+}
+
+.admin-editor-title .button .button-icon {
+  position: absolute;
+  left: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
 .admin-editor-title h2 {
   color: #fff;
   font-size: clamp(1.8rem, 4vw, 3.4rem);

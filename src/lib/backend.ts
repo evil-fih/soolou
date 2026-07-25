@@ -24,6 +24,7 @@ export interface ContactInput {
   name: string;
   email: string;
   message: string;
+  company?: string;
 }
 
 export interface SoolouChatMessage {
@@ -527,7 +528,20 @@ export async function createOrder(input: CheckoutInput) {
 }
 
 export async function sendContactMessage(input: ContactInput) {
-  const { error } = await requireSupabase()
+  const response = await fetch("/api/contact", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || result?.sent !== true) {
+    throw new Error(result?.error || "Could not email your message. Please try again.");
+  }
+
+  if (!canUseBackend()) return;
+
+  await requireSupabase()
     .from("contact_messages")
     .insert({
       user_id: input.userId ?? null,
@@ -535,8 +549,6 @@ export async function sendContactMessage(input: ContactInput) {
       email: input.email,
       message: input.message,
     });
-
-  if (error) throw error;
 }
 
 export async function fetchOrderHistory(userId: string) {

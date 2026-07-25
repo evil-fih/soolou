@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Envelope, EnvelopeSimple, Heart, MapPin } from "@phosphor-icons/react";
 import { Button } from "../components/Button";
 import { useAuth } from "../context/AuthContext";
-import { canUseBackend, sendContactMessage } from "../lib/backend";
+import { sendContactMessage } from "../lib/backend";
 
 export function ContactPage() {
   const { user } = useAuth();
@@ -15,16 +15,12 @@ export function ContactPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!canUseBackend()) {
-      setError("Supabase is not configured yet, so Soolou cannot save this message.");
-      return;
-    }
-
     const form = event.currentTarget;
     const formData = new FormData(form);
     const name = String(formData.get("name") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
     const message = String(formData.get("message") ?? "").trim();
+    const company = String(formData.get("company") ?? "").trim();
 
     if (name.length < 2 || message.length < 10) {
       setError("Please add your name and at least 10 characters about how we can help.");
@@ -32,6 +28,7 @@ export function ContactPage() {
     }
 
     setError("");
+    setSent(false);
     setSending(true);
 
     try {
@@ -40,6 +37,7 @@ export function ContactPage() {
         name,
         email,
         message,
+        company,
       });
 
       setSent(true);
@@ -101,7 +99,12 @@ export function ContactPage() {
           <textarea name="message" required minLength={10} maxLength={4000} placeholder="Tell us what you need help with" />
         </label>
 
-        {sent ? <p className="success-message">Thanks. Your message is ready for Soolou.</p> : null}
+        <label className="sr-only" aria-hidden="true">
+          <span>Company</span>
+          <input name="company" tabIndex={-1} autoComplete="off" />
+        </label>
+
+        {sent ? <p className="success-message">Message sent to the Soolou team.</p> : null}
         {error ? <p className="error-message">{error}</p> : null}
 
         <Button type="submit" size="lg" icon={<EnvelopeSimple weight="bold" />} disabled={sending}>

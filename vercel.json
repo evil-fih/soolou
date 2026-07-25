@@ -6,6 +6,9 @@
   "functions": {
     "api/soolou-chat.ts": {
       "maxDuration": 30
+    },
+    "api/contact.ts": {
+      "maxDuration": 10
     }
   }
 }

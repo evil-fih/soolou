@@ -6,7 +6,7 @@ export function HeroSection() {
     <section className="hero-section">
       <div className="hero-copy">
         <p className="hero-kicker">Customizable plushies</p>
-        <h1>Design Your Own Plushie!</h1>
+        <h1>Design Your Own Plush!</h1>
         <p className="hero-subtitle">
           Choose the outfit, we do the rest.
         </p>

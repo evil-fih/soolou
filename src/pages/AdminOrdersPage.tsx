@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowClockwise,
   ClipboardText,
+  CreditCard,
   Gift,
   MagnifyingGlass,
   MapPin,
@@ -316,6 +317,17 @@ export function AdminOrdersPage() {
                   <h3>Order Notes</h3>
                   <p>{selectedOrder.delivery_notes || "No delivery notes were added."}</p>
                   <p>{selectedOrder.gift_wrap ? `Gift wrap added (${formatMoney(selectedOrder.gift_wrap_fee)})` : "No gift wrap"}</p>
+                </div>
+              </section>
+              <section>
+                <CreditCard weight="bold" />
+                <div>
+                  <h3>Payment</h3>
+                  <p className={`admin-payment-status admin-payment-status-${selectedOrder.payment_status}`}>
+                    {selectedOrder.payment_status === "paid" ? "Test payment complete" : `Payment ${selectedOrder.payment_status}`}
+                  </p>
+                  <p>{selectedOrder.payment_provider === "sandbox" ? "Sandbox provider. No real money moved." : "No payment provider recorded."}</p>
+                  {selectedOrder.payment_reference ? <p>Reference: {selectedOrder.payment_reference}</p> : null}
                 </div>
               </section>
             </div>

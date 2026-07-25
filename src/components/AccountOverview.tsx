@@ -340,9 +340,14 @@ export function AccountOverview({ user, loading = false, error = "", onSignOut }
                     <strong>Order #{order.id.slice(0, 8).toUpperCase()}</strong>
                     <span>Placed {formatDate(order.created_at)}</span>
                   </div>
-                  <span className={`account-order-status account-order-status-${order.status}`}>
-                    {orderStatusLabels[order.status] ?? order.status}
-                  </span>
+                  <div className="account-order-statuses">
+                    <span className={`account-order-status account-order-status-${order.status}`}>
+                      {orderStatusLabels[order.status] ?? order.status}
+                    </span>
+                    <span className={`account-order-status account-payment-status-${order.payment_status}`}>
+                      {order.payment_status === "paid" ? "Test Paid" : `Payment ${order.payment_status}`}
+                    </span>
+                  </div>
                 </header>
 
                 <div className="account-order-items" aria-label="Order items">

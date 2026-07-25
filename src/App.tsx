@@ -17,6 +17,7 @@ const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((module) => 
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage").then((module) => ({ default: module.PrivacyPage })));
 const ProductPage = lazy(() => import("./pages/ProductPage").then((module) => ({ default: module.ProductPage })));
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((module) => ({ default: module.ProfilePage })));
+const SandboxPaymentPage = lazy(() => import("./pages/SandboxPaymentPage").then((module) => ({ default: module.SandboxPaymentPage })));
 const ShopPage = lazy(() => import("./pages/ShopPage").then((module) => ({ default: module.ShopPage })));
 
 function getRoute() {
@@ -49,6 +50,7 @@ export function App() {
   if (path === "/customize") page = <CustomizePage route={route} />;
   if (path === "/cart") page = <CartPage />;
   if (path === "/checkout") page = <CheckoutPage />;
+  if (path === "/payment-test") page = <SandboxPaymentPage route={route} />;
   if (path === "/contact") page = <ContactPage />;
   if (path === "/about") page = <AboutPage />;
   if (path === "/admin") page = <AdminPage />;

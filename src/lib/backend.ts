@@ -48,6 +48,9 @@ export interface SoolouWebsiteContext {
 export interface OrderSummary {
   id: string;
   status: AdminOrderStatus;
+  payment_status: PaymentStatus;
+  payment_provider: string | null;
+  paid_at: string | null;
   total: number;
   created_at: string;
   order_items: Array<{
@@ -65,6 +68,8 @@ export type AdminOrderStatus =
   | "shipped"
   | "delivered"
   | "cancelled";
+
+export type PaymentStatus = "pending" | "paid" | "failed" | "cancelled" | "refunded";
 
 export interface AdminOrderItem {
   id: string;
@@ -90,6 +95,10 @@ export interface AdminOrder {
   subtotal: number;
   total: number;
   status: AdminOrderStatus;
+  payment_status: PaymentStatus;
+  payment_provider: string | null;
+  payment_reference: string | null;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
   order_items: AdminOrderItem[];
@@ -527,6 +536,28 @@ export async function createOrder(input: CheckoutInput) {
   return String(data);
 }
 
+export async function completeSandboxPayment(orderId: string) {
+  const { data, error } = await requireSupabase()
+    .rpc("complete_sandbox_payment", {
+      p_order_id: orderId,
+    })
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelSandboxPayment(orderId: string) {
+  const { data, error } = await requireSupabase()
+    .rpc("cancel_sandbox_payment", {
+      p_order_id: orderId,
+    })
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function sendContactMessage(input: ContactInput) {
   const response = await fetch("/api/contact", {
     method: "POST",
@@ -554,11 +585,15 @@ export async function sendContactMessage(input: ContactInput) {
 export async function fetchOrderHistory(userId: string) {
   if (!canUseBackend()) return [];
 
-  const { data, error } = await requireSupabase()
+  const client = requireSupabase();
+  const { data, error } = await client
     .from("orders")
     .select(`
       id,
       status,
+      payment_status,
+      payment_provider,
+      paid_at,
       total,
       created_at,
       order_items (
@@ -570,11 +605,43 @@ export async function fetchOrderHistory(userId: string) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  let orderData = data;
 
-  return (data ?? []).map((order) => ({
+  if (error) {
+    const paymentColumnsMissing = error.code === "42703" || error.code === "PGRST204";
+    if (!paymentColumnsMissing) throw error;
+
+    const { data: legacyData, error: legacyError } = await client
+      .from("orders")
+      .select(`
+        id,
+        status,
+        total,
+        created_at,
+        order_items (
+          id,
+          product_name,
+          quantity
+        )
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (legacyError) throw legacyError;
+    orderData = legacyData?.map((order) => ({
+      ...order,
+      payment_status: "pending",
+      payment_provider: null,
+      paid_at: null,
+    })) ?? [];
+  }
+
+  return (orderData ?? []).map((order) => ({
     id: String(order.id),
     status: String(order.status) as AdminOrderStatus,
+    payment_status: String(order.payment_status ?? "pending") as PaymentStatus,
+    payment_provider: order.payment_provider ? String(order.payment_provider) : null,
+    paid_at: order.paid_at ? String(order.paid_at) : null,
     total: Number(order.total) || 0,
     created_at: String(order.created_at),
     order_items: (order.order_items ?? []).map((item) => ({
@@ -614,6 +681,10 @@ export async function fetchAdminOrders() {
         subtotal,
         total,
         status,
+        payment_status,
+        payment_provider,
+        payment_reference,
+        paid_at,
         created_at,
         updated_at,
         order_items (
@@ -648,6 +719,10 @@ export async function fetchAdminOrders() {
     subtotal: Number(order.subtotal) || 0,
     total: Number(order.total) || 0,
     status: String(order.status) as AdminOrderStatus,
+    payment_status: String(order.payment_status ?? "pending") as PaymentStatus,
+    payment_provider: order.payment_provider ? String(order.payment_provider) : null,
+    payment_reference: order.payment_reference ? String(order.payment_reference) : null,
+    paid_at: order.paid_at ? String(order.paid_at) : null,
     created_at: String(order.created_at),
     updated_at: String(order.updated_at),
     order_items: (order.order_items ?? []).map((item) => ({

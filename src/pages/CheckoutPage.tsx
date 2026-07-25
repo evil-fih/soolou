@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { CheckCircle, CreditCard, LockKey, MapPin, Package, Truck } from "@phosphor-icons/react";
+import { CreditCard, Flask, LockKey, MapPin, Package, Truck } from "@phosphor-icons/react";
 import { Button } from "../components/Button";
 import { ProductThumbnail } from "../components/ProductThumbnail";
 import { useCart } from "../context/CartContext";
@@ -10,12 +10,10 @@ const giftWrapFee = 6;
 
 export function CheckoutPage() {
   const { user } = useAuth();
-  const { clearCart, items, subtotal } = useCart();
+  const { items, subtotal } = useCart();
   const [giftWrap, setGiftWrap] = useState(false);
-  const [placed, setPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
-  const [orderId, setOrderId] = useState("");
   const giftWrapTotal = items.length && giftWrap ? giftWrapFee : 0;
   const total = items.length ? subtotal + giftWrapTotal : 0;
   const fullName = user?.user_metadata?.full_name;
@@ -56,9 +54,7 @@ export function CheckoutPage() {
         items,
       });
 
-      setOrderId(newOrderId);
-      setPlaced(true);
-      clearCart();
+      window.location.hash = `/payment-test?order=${encodeURIComponent(newOrderId)}&total=${encodeURIComponent(total.toFixed(2))}`;
     } catch (orderError) {
       setError(
         orderError instanceof Error
@@ -68,22 +64,6 @@ export function CheckoutPage() {
     } finally {
       setPlacing(false);
     }
-  }
-
-  if (placed) {
-    return (
-      <section className="section checkout-success-page" aria-labelledby="checkout-success-heading">
-        <div className="checkout-success-card stitch-frame">
-          <CheckCircle weight="fill" />
-          <h1 id="checkout-success-heading">Order placed</h1>
-          <p>Thanks. Your Soolou order is ready for studio review and confirmation.</p>
-          {orderId ? <p className="success-message">Order reference: {orderId.slice(0, 8)}</p> : null}
-          <Button href="#/shop" size="lg">
-            Keep Shopping
-          </Button>
-        </div>
-      </section>
-    );
   }
 
   if (!user) {
@@ -108,9 +88,9 @@ export function CheckoutPage() {
     <section className="section checkout-layout">
       <form className="checkout-form" onSubmit={handleSubmit}>
         <div className="checkout-heading">
-          <span className="auth-kicker">Secure Checkout</span>
+          <span className="auth-kicker">Sandbox Checkout</span>
           <h1>Checkout</h1>
-          <p>Enter shipping details and review your plush order before placing it.</p>
+          <p>Enter shipping details and continue to a test payment. No real money will move.</p>
         </div>
 
         <fieldset className="checkout-fieldset">
@@ -172,15 +152,19 @@ export function CheckoutPage() {
             Payment
           </legend>
           <div className="payment-placeholder">
-            <strong>Payment collection is coming soon.</strong>
-            <p>For now, placing an order creates a studio review request before payment.</p>
+            <Flask weight="bold" />
+            <div>
+              <strong>Sandbox payment</strong>
+              <p>You will use a test card on the next screen. No real card details are accepted.</p>
+            </div>
           </div>
         </fieldset>
 
         {error ? <p className="error-message">{error}</p> : null}
 
         <button className="button button-primary button-lg" type="submit" disabled={!items.length || placing}>
-          {placing ? "Placing..." : "Place Order"}
+          <LockKey weight="bold" />
+          {placing ? "Creating Test Order..." : "Continue to Test Payment"}
         </button>
       </form>
 
@@ -220,7 +204,7 @@ export function CheckoutPage() {
           <strong>Calculated later</strong>
         </div>
         <div className="summary-total">
-          <span>Total today</span>
+          <span>Test total</span>
           <strong>${total}</strong>
         </div>
       </aside>

@@ -2159,6 +2159,21 @@ p {
   padding: 16px;
 }
 
+.admin-payment-status {
+  color: #fff !important;
+  font-weight: 950 !important;
+  text-transform: capitalize;
+}
+
+.admin-payment-status-paid {
+  color: #dff3bd !important;
+}
+
+.admin-payment-status-cancelled,
+.admin-payment-status-failed {
+  color: #ffd0df !important;
+}
+
 .admin-order-info-grid svg {
   color: var(--pink);
   font-size: 1.6rem;
@@ -3421,6 +3436,26 @@ p {
   font-weight: 950 !important;
 }
 
+.account-order-statuses {
+  display: flex !important;
+  align-items: center;
+  justify-content: end;
+  gap: 7px !important;
+}
+
+.account-payment-status-paid {
+  background: rgba(117, 170, 35, 0.22);
+}
+
+.account-payment-status-pending {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.account-payment-status-cancelled,
+.account-payment-status-failed {
+  opacity: 0.68;
+}
+
 .account-order-status-confirmed,
 .account-order-status-ready_to_ship,
 .account-order-status-delivered {
@@ -3841,10 +3876,19 @@ p {
 
 .payment-placeholder {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 4px;
+  align-items: start;
   padding: 14px;
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.58);
+}
+
+.payment-placeholder > svg {
+  width: 26px;
+  height: 26px;
+  margin-right: 8px;
+  color: var(--pink);
 }
 
 .payment-placeholder strong {
@@ -3919,6 +3963,160 @@ p {
   color: var(--ink);
   font-size: clamp(2.4rem, 5vw, 4.5rem);
   font-weight: 950;
+}
+
+.sandbox-payment-page {
+  min-height: calc(100dvh - 72px);
+  display: grid;
+  place-items: center;
+  padding-top: 48px;
+  padding-bottom: 58px;
+}
+
+.sandbox-payment-shell {
+  width: min(100%, 660px);
+  display: grid;
+  gap: 22px;
+  padding: clamp(22px, 5vw, 38px);
+  background: var(--card);
+}
+
+.sandbox-payment-header {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+}
+
+.sandbox-payment-header h1 {
+  color: var(--ink);
+  font-size: clamp(2.35rem, 6vw, 4.4rem);
+  font-weight: 950;
+  line-height: 0.98;
+}
+
+.sandbox-payment-header p,
+.sandbox-result-card > p {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.sandbox-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 2px solid rgba(18, 35, 61, 0.2);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.sandbox-mode-badge svg {
+  width: 18px;
+  height: 18px;
+  color: var(--pink);
+}
+
+.sandbox-payment-order {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 18px;
+  padding: 16px;
+  border: 2px solid rgba(18, 35, 61, 0.15);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.sandbox-payment-order span {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.sandbox-payment-order strong {
+  color: var(--ink);
+  font-weight: 950;
+}
+
+.sandbox-payment-form {
+  display: grid;
+  gap: 15px;
+}
+
+.sandbox-payment-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sandbox-card-input {
+  position: relative;
+}
+
+.sandbox-card-input svg {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  top: 50%;
+  width: 23px;
+  height: 23px;
+  color: var(--ink);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.sandbox-card-input input {
+  width: 100%;
+  padding-left: 50px;
+}
+
+.sandbox-test-hint {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.sandbox-payment-form > .button {
+  width: 100%;
+}
+
+.sandbox-cancel-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sandbox-cancel-button:hover {
+  color: var(--pink);
+}
+
+.sandbox-cancel-button:focus-visible {
+  outline: 3px solid var(--pink);
+  outline-offset: 3px;
+}
+
+.sandbox-cancel-button:active {
+  transform: translateY(1px);
+}
+
+.sandbox-cancel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.sandbox-result-card .sandbox-mode-badge {
+  order: -1;
 }
 
 .contact-page {
@@ -5104,6 +5302,16 @@ p {
 }
 
 @media (max-width: 520px) {
+  .sandbox-payment-row {
+    grid-template-columns: 1fr;
+  }
+
+  .account-order-statuses {
+    width: 100%;
+    justify-content: start;
+    flex-wrap: wrap;
+  }
+
   .support-chat {
     right: 12px;
     bottom: 12px;

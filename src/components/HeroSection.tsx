@@ -5,23 +5,23 @@ export function HeroSection() {
   return (
     <section className="hero-section">
       <div className="hero-copy">
-        <p className="hero-kicker">Custom plush dolls and tiny outfits</p>
-        <h1>Design Your Plush</h1>
+        <p className="hero-kicker">Customizable plushies</p>
+        <h1>Design Your Own Plushie!</h1>
         <p className="hero-subtitle">
-          Pick the face, outfit, hair, and note. Soolou turns it into a soft gift.
+          Choose the outfit, we do the rest.
         </p>
         <div className="hero-actions">
           <Button href="#/customize" size="lg">
             Design My Plush
           </Button>
           <Button href="#/shop" variant="secondary" size="lg">
-            Shop Drops
+            Browse
           </Button>
         </div>
       </div>
       <div className="hero-visual stitch-frame">
         <div className="hero-banner-copy">
-          <span>Fresh drop</span>
+          <span>New Stuff</span>
           <strong>Blue Denim Shorts</strong>
         </div>
         <img

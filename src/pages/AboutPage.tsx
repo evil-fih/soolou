@@ -17,7 +17,7 @@ export function AboutPage() {
         <div className="story-card">
           <h2>Made for the people you love</h2>
           <p>
-            Most gifts are pretty generic and boring. Instead of cards and roses on Valentine's Day, why not Soolou?
+            Most gifts are pretty generic and boring. Instead of cards and roses on Valentine's Day, why not Soolou? Psst - You can tell your boyfriend to fix the dishwasher.
           </p>
         </div>
         <div className="process-grid">
@@ -43,8 +43,8 @@ export function AboutPage() {
           </div>
           <div>
             <Gift weight="fill" />
-            <h3>Built for gifting.</h3>
-            <p>Choose a gift box, add a handwritten note, and it ships directly to them — no extra stops needed.</p>
+            <h3>Built for gifting</h3>
+            <p>Add a handwritten note, and it ships directly to them, no extra stops needed.</p>
           </div>
           <div>
             <Heart weight="fill" />

@@ -1716,6 +1716,42 @@ p {
   padding: clamp(18px, 3vw, 28px);
 }
 
+.admin-read-only-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.68);
+  border-radius: 18px;
+  background: #ffffea;
+  color: #12233d;
+  padding: 12px 14px;
+  font-weight: 900;
+}
+
+.admin-read-only-notice svg {
+  flex: 0 0 auto;
+  color: var(--pink-dark);
+  font-size: 1.35rem;
+}
+
+.admin-editor-fields {
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-editor-fields:disabled {
+  opacity: 0.82;
+}
+
+.admin-editor-fields:disabled input,
+.admin-editor-fields:disabled textarea,
+.admin-editor-fields:disabled select,
+.admin-editor-fields:disabled .admin-upload-button {
+  cursor: not-allowed;
+}
+
 .admin-people-panel {
   display: grid;
   gap: 18px;

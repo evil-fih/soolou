@@ -58,7 +58,7 @@ function orderReference(orderId: string) {
 }
 
 export function AdminOrdersPage() {
-  const { user, loading: authLoading, profileLoading, isAdmin, isProductAdmin } = useAuth();
+  const { user, loading: authLoading, profileLoading, isAdmin, isStaff } = useAuth();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,9 +85,9 @@ export function AdminOrdersPage() {
   }, []);
 
   useEffect(() => {
-    if (!isProductAdmin) return;
+    if (!isStaff) return;
     void loadOrders();
-  }, [isProductAdmin, loadOrders]);
+  }, [isStaff, loadOrders]);
 
   const filteredOrders = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -153,7 +153,7 @@ export function AdminOrdersPage() {
         <div className="admin-locked-card">
           <ShieldCheck weight="bold" />
           <h1>Admin Sign-In Required</h1>
-          <p>Log in with an admin or sub-admin account to manage customer orders.</p>
+          <p>Log in with an admin or helper account to manage customer orders.</p>
           <a className="button button-primary button-md" href="#/login?redirect=/admin/orders">
             Log In
           </a>
@@ -162,13 +162,13 @@ export function AdminOrdersPage() {
     );
   }
 
-  if (!isProductAdmin) {
+  if (!isStaff) {
     return (
       <section className="admin-page section">
         <div className="admin-locked-card">
           <ShieldCheck weight="bold" />
           <h1>Store Manager Access Only</h1>
-          <p>This page is available to Soolou admins and sub-admins.</p>
+          <p>This page is available to Soolou admins and helpers.</p>
         </div>
       </section>
     );
@@ -177,7 +177,7 @@ export function AdminOrdersPage() {
   return (
     <section className="admin-page admin-orders-page section" aria-labelledby="admin-orders-heading">
       <div className="admin-heading admin-orders-heading">
-        <span className="auth-kicker">{isAdmin ? "Store Admin" : "Sub-Admin"}</span>
+        <span className="auth-kicker">{isAdmin ? "Store Admin" : "Store Helper"}</span>
         <h1 id="admin-orders-heading">Customer Orders</h1>
         <p>Review customer details, check purchased items, and update fulfillment progress.</p>
       </div>

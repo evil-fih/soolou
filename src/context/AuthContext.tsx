@@ -22,7 +22,7 @@ interface AuthContextValue {
   session: Session | null;
   profile: ProfileRecord | null;
   isAdmin: boolean;
-  isProductAdmin: boolean;
+  canManageProducts: boolean;
   isStaff: boolean;
   loading: boolean;
   profileLoading: boolean;
@@ -119,11 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       isAdmin: profile?.admin_role === "admin" || Boolean(profile?.is_admin),
-      isProductAdmin:
-        profile?.admin_role === "admin" ||
-        profile?.admin_role === "sub_admin" ||
-        Boolean(profile?.is_admin),
-      isStaff: Boolean(profile && profile.admin_role !== "customer"),
+      canManageProducts: profile?.admin_role === "admin" || Boolean(profile?.is_admin),
+      isStaff: profile?.admin_role === "admin" || profile?.admin_role === "helper" || Boolean(profile?.is_admin),
       loading,
       profileLoading,
       signIn: (email, password) =>

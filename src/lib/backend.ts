@@ -123,7 +123,7 @@ export interface SavedPlushDesign {
   design_snapshot: PlushDesignSnapshot;
 }
 
-export type AdminRole = "customer" | "helper" | "sub_admin" | "admin";
+export type AdminRole = "customer" | "helper" | "admin";
 
 export interface ProfileRecord {
   id: string;
@@ -160,7 +160,13 @@ function requireSupabase() {
 function normalizeProfile(profile: Partial<ProfileRecord> | null): ProfileRecord | null {
   if (!profile?.id) return null;
 
-  const role = profile.admin_role ?? (profile.is_admin ? "admin" : "customer");
+  const storedRole = profile.admin_role as string | undefined;
+  const role: AdminRole =
+    profile.is_admin || storedRole === "admin"
+      ? "admin"
+      : storedRole === "helper" || storedRole === "sub_admin"
+        ? "helper"
+        : "customer";
 
   return {
     id: profile.id,

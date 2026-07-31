@@ -23,7 +23,7 @@ const navLinks = [
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const { user, loading, isProductAdmin } = useAuth();
+  const { user, loading, isStaff } = useAuth();
   const { itemCount } = useCart();
   const { favoriteCount } = useFavorites();
   const fullName = user?.user_metadata?.full_name;
@@ -57,7 +57,7 @@ export function Navbar() {
             <UserCircle weight="bold" />
             <span>{loading ? "..." : accountLabel}</span>
           </a>
-          {isProductAdmin ? (
+          {isStaff ? (
             <a className="icon-button" href="#/admin" aria-label="Admin">
               <ShieldCheck weight="bold" />
             </a>
@@ -89,7 +89,7 @@ export function Navbar() {
           <a href={accountHref} onClick={() => setOpen(false)}>
             {user ? "My Account" : "Log in"}
           </a>
-          {isProductAdmin ? (
+          {isStaff ? (
             <a href="#/admin" onClick={() => setOpen(false)}>
               Admin
             </a>

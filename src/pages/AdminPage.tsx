@@ -57,7 +57,7 @@ const blankDraft: ProductDraft = {
 };
 
 const categoryOptions: ProductCategory[] = ["clothes", "hair", "accessories", "limited"];
-const roleOptions: AdminRole[] = ["customer", "helper", "sub_admin", "admin"];
+const roleOptions: AdminRole[] = ["customer", "helper", "admin"];
 const categoryLabels: Record<ProductCategory, string> = {
   clothes: "Clothes",
   hair: "Hair",
@@ -67,7 +67,6 @@ const categoryLabels: Record<ProductCategory, string> = {
 const roleLabels: Record<AdminRole, string> = {
   customer: "Customer",
   helper: "Helper",
-  sub_admin: "Sub-admin",
   admin: "Admin",
 };
 
@@ -148,7 +147,7 @@ function validateDraft(draft: ProductDraft) {
 }
 
 export function AdminPage() {
-  const { user, loading, profileLoading, isAdmin, isProductAdmin } = useAuth();
+  const { user, loading, profileLoading, isAdmin, isStaff, canManageProducts } = useAuth();
   const { allProducts, refreshProducts } = useProductCatalog();
   const [draft, setDraft] = useState<ProductDraft>(blankDraft);
   const [saving, setSaving] = useState(false);
@@ -242,6 +241,11 @@ export function AdminPage() {
     setMessage("");
     setError("");
 
+    if (!canManageProducts) {
+      setError("Only admins can save product changes.");
+      return;
+    }
+
     const draftError = validateDraft(draft);
     if (draftError) {
       setError(draftError);
@@ -268,6 +272,12 @@ export function AdminPage() {
 
     setMessage("");
     setError("");
+
+    if (!canManageProducts) {
+      setError("Only admins can archive products.");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -305,6 +315,12 @@ export function AdminPage() {
 
     setMessage("");
     setError("");
+
+    if (!canManageProducts) {
+      setError("Only admins can upload product images.");
+      return;
+    }
+
     setImageUploading(true);
 
     try {
@@ -345,13 +361,13 @@ export function AdminPage() {
     );
   }
 
-  if (!isProductAdmin) {
+  if (!isStaff) {
     return (
       <section className="admin-page section">
         <div className="admin-locked-card">
           <ShieldCheck weight="bold" />
-          <h1>Admin Only</h1>
-          <p>Your account does not have store admin access yet.</p>
+          <h1>Staff Only</h1>
+          <p>Your account does not have store staff access yet.</p>
         </div>
       </section>
     );
@@ -360,9 +376,9 @@ export function AdminPage() {
   return (
     <section className="admin-page section" aria-labelledby="admin-heading">
       <div className="admin-heading">
-        <span className="auth-kicker">{isAdmin ? "Store Admin" : "Sub-Admin"}</span>
+        <span className="auth-kicker">{isAdmin ? "Store Admin" : "Store Helper"}</span>
         <h1 id="admin-heading">Product Configuration</h1>
-        <p>Add, update, or archive Soolou products without touching code.</p>
+        <p>{isAdmin ? "Add, update, or archive Soolou products without touching code." : "Browse the product catalog and review product details."}</p>
       </div>
 
       <nav className="admin-section-nav" aria-label="Admin pages">
@@ -464,12 +480,18 @@ export function AdminPage() {
         </aside>
 
         <form className="admin-editor" onSubmit={handleSave}>
+          {!canManageProducts ? (
+            <div className="admin-read-only-notice" role="status">
+              <ShieldCheck weight="bold" />
+              <span>Helper access is read only. Only admins can save product changes.</span>
+            </div>
+          ) : null}
           <div className="admin-editor-title">
             <div>
               <span>{draft.id ? `Editing #${draft.id}` : "New Item"}</span>
               <h2>{draft.id ? draft.name || "Untitled Product" : "Add Product"}</h2>
             </div>
-            <button className="button button-primary button-md" type="submit" disabled={saving}>
+            <button className="button button-primary button-md" type="submit" disabled={saving || !canManageProducts}>
               <span className="button-icon">
                 <FloppyDisk weight="bold" />
               </span>
@@ -477,16 +499,17 @@ export function AdminPage() {
             </button>
           </div>
 
-          <div className="admin-form-grid">
-            <label>
+          <fieldset className="admin-editor-fields" disabled={!canManageProducts}>
+            <div className="admin-form-grid">
+              <label>
               <span>Name</span>
               <input placeholder="White Comfy Shorts" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} />
-            </label>
-            <label>
+              </label>
+              <label>
               <span>Slug</span>
               <input placeholder="white-comfy-shorts" value={draft.slug} onChange={(event) => updateDraft("slug", event.target.value)} />
-            </label>
-            <label>
+              </label>
+              <label>
               <span>Category</span>
               <select value={draft.category} onChange={(event) => updateDraft("category", event.target.value as ProductCategory | "")}>
                 <option value="" disabled>
@@ -498,66 +521,67 @@ export function AdminPage() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
+              </label>
+              <label>
               <span>Price</span>
               <input placeholder="16" type="number" min="0" step="1" value={draft.price} onChange={(event) => updateDraft("price", event.target.value)} />
-            </label>
-            <label>
+              </label>
+              <label>
               <span>Badge</span>
               <input placeholder="Fresh" value={draft.badge} onChange={(event) => updateDraft("badge", event.target.value)} />
-            </label>
-            <label>
+              </label>
+              <label>
               <span>Palette</span>
               <input placeholder="#7dc7ed" value={draft.palette} onChange={(event) => updateDraft("palette", event.target.value)} />
-            </label>
-            <label className="admin-field-wide">
+              </label>
+              <label className="admin-field-wide">
               <span>Image Path</span>
               <input placeholder="/products/name.jpg" value={draft.image} onChange={(event) => updateDraft("image", event.target.value)} />
-            </label>
-            <div className="admin-upload-field admin-field-wide">
-              <div>
-                <span>Upload Image</span>
-                <p>PNG, JPG, WEBP, or GIF, up to 5 MB.</p>
-              </div>
-              <label className="admin-upload-button">
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  disabled={imageUploading}
-                  onChange={(event) => handleImageUpload(event.target.files?.[0])}
-                />
-                <span>{imageUploading ? "Uploading..." : "Choose Image"}</span>
               </label>
-              {draft.image ? (
-                <div className="admin-image-preview">
-                  <img src={draft.image} alt="" />
+              <div className="admin-upload-field admin-field-wide">
+                <div>
+                  <span>Upload Image</span>
+                  <p>PNG, JPG, WEBP, or GIF, up to 5 MB.</p>
                 </div>
-              ) : null}
-            </div>
-            <label className="admin-field-wide">
+                <label className="admin-upload-button">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    disabled={imageUploading || !canManageProducts}
+                    onChange={(event) => handleImageUpload(event.target.files?.[0])}
+                  />
+                  <span>{imageUploading ? "Uploading..." : canManageProducts ? "Choose Image" : "Admin Upload Only"}</span>
+                </label>
+                {draft.image ? (
+                  <div className="admin-image-preview">
+                    <img src={draft.image} alt="" />
+                  </div>
+                ) : null}
+              </div>
+              <label className="admin-field-wide">
               <span>Tags</span>
               <input placeholder="shorts, blue, soft" value={draft.tags} onChange={(event) => updateDraft("tags", event.target.value)} />
-            </label>
-            <label className="admin-field-wide">
+              </label>
+              <label className="admin-field-wide">
               <span>Extra Categories</span>
               <input placeholder="limited" value={draft.extraCategories} onChange={(event) => updateDraft("extraCategories", event.target.value)} />
-            </label>
-            <label className="admin-field-wide">
+              </label>
+              <label className="admin-field-wide">
               <span>Description</span>
               <textarea placeholder="Soft white shorts for everyday plush styling." value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} />
-            </label>
-            <label className="admin-field-wide">
+              </label>
+              <label className="admin-field-wide">
               <span>Detail</span>
               <textarea placeholder="Hand-drawn Soolou piece made for mix-and-match plush styling." value={draft.detail} onChange={(event) => updateDraft("detail", event.target.value)} />
-            </label>
-          </div>
+              </label>
+            </div>
+          </fieldset>
 
           {error ? <div className="settings-message settings-message-error" role="alert">{error}</div> : null}
           {message ? <div className="settings-message settings-message-success">{message}</div> : null}
 
           <div className="admin-form-actions">
-            <button className="button button-primary button-md" type="submit" disabled={saving}>
+            <button className="button button-primary button-md" type="submit" disabled={saving || !canManageProducts}>
               <span className="button-icon">
                 <FloppyDisk weight="bold" />
               </span>
@@ -566,7 +590,7 @@ export function AdminPage() {
           </div>
 
           {draft.id ? (
-            <button className="admin-archive-button" type="button" onClick={handleArchive} disabled={saving}>
+            <button className="admin-archive-button" type="button" onClick={handleArchive} disabled={saving || !canManageProducts}>
               <Trash weight="bold" />
               <span>Archive Product</span>
             </button>

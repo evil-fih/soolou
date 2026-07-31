@@ -36,7 +36,7 @@ export function ProductCard({ product, compact = false, showBadge = false, badge
           <p>{product.description}</p>
         </div>
         <div className="product-card-bottom">
-          <strong>${product.price}</strong>
+          <strong title={`$${product.price}`}>${product.price}</strong>
           <div className="product-card-actions">
             <button
               className={saved ? "icon-button product-card-favorite-active" : "icon-button"}

@@ -370,10 +370,7 @@ function adminProductRpcColumns(product: Product) {
 
 export async function createAdminProduct(product: Product) {
   const { data, error } = await requireSupabase()
-    .rpc("save_admin_product", {
-      p_id: null,
-      ...adminProductRpcColumns(product),
-    })
+    .rpc("create_admin_product", adminProductRpcColumns(product))
     .single();
 
   if (error) throw error;

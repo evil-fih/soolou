@@ -1161,19 +1161,24 @@ p {
 }
 
 .product-card-bottom {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
 .product-card-bottom strong {
+  min-width: 0;
+  overflow: hidden;
   color: var(--ink);
   font-size: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .product-card-actions {
   display: flex;
+  flex: 0 0 auto;
   gap: 7px;
 }
 

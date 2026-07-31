@@ -1,12 +1,15 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ClipboardText,
+  Funnel,
   FloppyDisk,
+  MagnifyingGlass,
   Package,
   PlusCircle,
   ShieldCheck,
   Trash,
   UsersThree,
+  X,
 } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
 import { useProductCatalog } from "../context/ProductCatalogContext";
@@ -36,6 +39,8 @@ type ProductDraft = {
   extraCategories: string;
   image: string;
 };
+
+type ProductSort = "name" | "price-low" | "price-high" | "newest";
 
 const blankDraft: ProductDraft = {
   slug: "",
@@ -155,11 +160,49 @@ export function AdminPage() {
   const [roleMessage, setRoleMessage] = useState("");
   const [roleError, setRoleError] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
+  const [productQuery, setProductQuery] = useState("");
+  const [productCategory, setProductCategory] = useState<ProductCategory | "all">("all");
+  const [productSort, setProductSort] = useState<ProductSort>("name");
 
   const editableProducts = useMemo(
     () => allProducts.filter((product) => product.id !== 9001),
     [allProducts],
   );
+  const visibleProducts = useMemo(() => {
+    const query = productQuery.trim().toLowerCase();
+    const products = editableProducts.filter((product) => {
+      const matchesCategory =
+        productCategory === "all" ||
+        product.category === productCategory ||
+        product.extraCategories?.includes(productCategory);
+      const searchableText = [
+        product.name,
+        product.slug,
+        product.badge,
+        product.description,
+        product.detail,
+        ...product.tags,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return matchesCategory && (!query || searchableText.includes(query));
+    });
+
+    return [...products].sort((first, second) => {
+      if (productSort === "price-low") return first.price - second.price;
+      if (productSort === "price-high") return second.price - first.price;
+      if (productSort === "newest") return second.id - first.id;
+      return first.name.localeCompare(second.name);
+    });
+  }, [editableProducts, productCategory, productQuery, productSort]);
+  const hasProductFilters = Boolean(productQuery.trim()) || productCategory !== "all" || productSort !== "name";
+
+  function clearProductFilters() {
+    setProductQuery("");
+    setProductCategory("all");
+    setProductSort("name");
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -340,22 +383,84 @@ export function AdminPage() {
             <span>New Product</span>
           </button>
 
-          {editableProducts.map((product) => (
-            <button
-              className={draft.id === product.id ? "admin-product-row admin-product-row-active" : "admin-product-row"}
-              type="button"
-              key={product.id}
-              onClick={() => setDraft(draftFromProduct(product))}
-            >
-              <Package weight="bold" />
-              <span>
-                <strong>{product.name}</strong>
-                <small>
-                  {categoryLabels[product.category]} - ${product.price}
-                </small>
-              </span>
-            </button>
-          ))}
+          <div className="admin-product-tools" aria-label="Filter products">
+            <label className="admin-product-search">
+              <span className="sr-only">Search products</span>
+              <MagnifyingGlass weight="bold" />
+              <input
+                type="search"
+                placeholder="Search products..."
+                value={productQuery}
+                onChange={(event) => setProductQuery(event.target.value)}
+              />
+            </label>
+            <div className="admin-product-filter-row">
+              <label>
+                <span className="sr-only">Filter by category</span>
+                <Funnel weight="bold" />
+                <select
+                  aria-label="Filter by category"
+                  value={productCategory}
+                  onChange={(event) => setProductCategory(event.target.value as ProductCategory | "all")}
+                >
+                  <option value="all">All Categories</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category}>
+                      {categoryLabels[category]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Sort products</span>
+                <select
+                  aria-label="Sort products"
+                  value={productSort}
+                  onChange={(event) => setProductSort(event.target.value as ProductSort)}
+                >
+                  <option value="name">Name A-Z</option>
+                  <option value="newest">Newest</option>
+                  <option value="price-low">Price Low-High</option>
+                  <option value="price-high">Price High-Low</option>
+                </select>
+              </label>
+            </div>
+            <div className="admin-product-results" aria-live="polite">
+              <span>{visibleProducts.length} of {editableProducts.length} products</span>
+              {hasProductFilters ? (
+                <button type="button" onClick={clearProductFilters}>
+                  <X weight="bold" />
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="admin-product-results-list">
+            {visibleProducts.map((product) => (
+              <button
+                className={draft.id === product.id ? "admin-product-row admin-product-row-active" : "admin-product-row"}
+                type="button"
+                key={product.id}
+                onClick={() => setDraft(draftFromProduct(product))}
+              >
+                <Package weight="bold" />
+                <span>
+                  <strong>{product.name}</strong>
+                  <small>
+                    {categoryLabels[product.category]} - ${product.price}
+                  </small>
+                </span>
+              </button>
+            ))}
+            {visibleProducts.length === 0 ? (
+              <div className="admin-product-empty">
+                <Package weight="bold" />
+                <strong>No products found</strong>
+                <span>Try another search or clear the filters.</span>
+              </div>
+            ) : null}
+          </div>
         </aside>
 
         <form className="admin-editor" onSubmit={handleSave}>

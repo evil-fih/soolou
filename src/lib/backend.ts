@@ -308,13 +308,10 @@ export async function fetchAdminProfiles() {
 
 export async function updateProfileRole(userId: string, adminRole: AdminRole) {
   const { data, error } = await requireSupabase()
-    .from("profiles")
-    .update({
-      admin_role: adminRole,
-      is_admin: adminRole === "admin",
+    .rpc("set_profile_admin_role", {
+      p_user_id: userId,
+      p_admin_role: adminRole,
     })
-    .eq("id", userId)
-    .select("id, full_name, email, is_admin, admin_role")
     .single();
 
   if (error) throw error;
@@ -664,10 +661,6 @@ export async function fetchAdminOrders() {
   let orderData = data;
 
   if (error) {
-    const missingAdminFeed = error.code === "PGRST202" || error.code === "42883";
-
-    if (!missingAdminFeed) throw error;
-
     const { data: fallbackData, error: fallbackError } = await client
       .from("orders")
       .select(`
@@ -702,7 +695,9 @@ export async function fetchAdminOrders() {
       `)
       .order("created_at", { ascending: false });
 
-    if (fallbackError) throw fallbackError;
+    if (fallbackError) {
+      throw new Error(fallbackError.message || error.message || "Orders could not load.");
+    }
     orderData = fallbackData;
   }
 
